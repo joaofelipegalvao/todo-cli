@@ -2,13 +2,15 @@ Gerenciador de tarefas em linha de comando - Projeto de estudo em Rust 🦀
 
 ## 📝 Todo CLI
 
-Este projeto foi desenvolvido em 1 etapa, marcada por tag:
+Este projeto foi desenvolvido em 2 etapa, marcada por tag:
 
 | Versão | Descrição | Conceitos |
 |--------|-----------|-----------|
 | [v1] | CLI básica com add/list | `OpenOptions`, `writeln!`, `enumerate`, `match`, `?` operator |
+| [v2] | Comando done para marcar conclusão | `parse()`, `.map().collect()`, `.replace()`, `Vec<String>`, `.join()`, `fs::write()` |
 
 [v1]: https://github.com/joaofelipegalvao/todo-cli/releases/tag/v0.1.0
+[v2]: https://github.com/joaofelipegalvao/todo-cli/compare/v0.1.0...v0.2.0
 
 ## 🚀 Como usar
 
@@ -18,6 +20,9 @@ cargo run -- add "Estudar Rust"
 
 # Listar tarefas
 cargo run -- list
+
+# Marcar tarefa como concluída
+cargo run -- done 1
 
 # Ver versão específica
 git checkout v0.1.0  # ou qualquer tag
@@ -29,6 +34,7 @@ git checkout v0.1.0  # ou qualquer tag
 |---------|-----------|---------|
 | add | Adiciona nova tarefa | todo add "Estudar Rust" |
 | list | Lista todas as tarefas | todo list |
+| done | Marca tarefa como concluída | todo done 1 |
 
 ## 💡 O que aprendi
 
@@ -38,11 +44,15 @@ git checkout v0.1.0  # ou qualquer tag
 - ✅ Pattern matching com match
 - ✅ Tratamento de erros com ? operator
 - ✅ CLI argument parsing
+- ✅ Conversão de tipos com parse()
+- ✅ Transformação de coleções com .map().collect()
+- ✅ Substituição de strings com .replace()
+- ✅ Sobrescrita de arquivos com fs::write()
 
 ## 🎯 Próximos passos
 
+- [x] Comando done para marcar como concluída
 - [ ] Comando remove para deletar tarefas
-- [ ] Comando done para marcar como concluída
 - [ ] Persistência de estado (concluídas/pendentes)
 - [ ] Testes unitários
 
