@@ -13,7 +13,9 @@ fn run() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 {
-        return Err("Uso: todo <comando> [argumentos]\nComandos: add, list, done, remove".into());
+        return Err(
+            "Uso: todo <comando> [argumentos]\nComandos: add, list, done, undone, remove".into(),
+        );
     }
 
     let comando = &args[1];
@@ -67,6 +69,29 @@ fn run() -> Result<(), Box<dyn Error>> {
             fs::write("todos.txt", linhas.join("\n") + "\n")?;
 
             println!("✓ Tarefa marcada como concluída");
+        }
+
+        "undone" => {
+            if args.len() < 3 {
+                return Err("Uso: todo undone <número>".into());
+            }
+
+            let numero: usize = args[2].parse()?;
+
+            let conteudo = fs::read_to_string("todos.txt")?;
+
+            let mut linhas: Vec<String> = conteudo.lines().map(|l| l.to_string()).collect();
+
+            if numero == 0 || numero > linhas.len() {
+                return Err("Número de tarefa inválido".into());
+            }
+
+            let indice = numero - 1;
+            linhas[indice] = linhas[indice].replace("[x]", "[ ]");
+
+            fs::write("todos.txt", linhas.join("\n") + "\n")?;
+
+            println!("✓ Tarefa desmarcada");
         }
 
         "remove" => {
