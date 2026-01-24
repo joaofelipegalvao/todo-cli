@@ -11,12 +11,14 @@ Este projeto foi desenvolvido em 4 etapas, marcada por tags:
 | [v3] | Comando remove para deletar tarefas | `Vec::remove()`, validação de índices, tratamento de erros |
 | [v4] | Comando undone para desmarcar conclusão | manipulação inversa de estados, lógica booleana |
 | [v4.1] | Correção de bug lógico no comando list | `trim()`, filtro de linhas vazias, tratamento robusto de entrada |
+| [v4.2] | Validações de estado para operações de tarefas | validação de estados duplicados, mensagens de erro específicas, lógica de pré-condições |
 
 [v1]: https://github.com/joaofelipegalvao/todo-cli/releases/tag/v0.1.0
 [v2]: https://github.com/joaofelipegalvao/todo-cli/compare/v0.1.0...v0.2.0
 [v3]: https://github.com/joaofelipegalvao/todo-cli/compare/v0.2.0...v0.3.0
 [v4]: https://github.com/joaofelipegalvao/todo-cli/compare/v0.3.0...v0.4.0
 [v4.1]: https://github.com/joaofelipegalvao/todo-cli/compare/v0.4.0...v0.4.1
+[v4.2]: https://github.com/joaofelipegalvao/todo-cli/compare/v0.4.1...v0.4.2
 
 ## 🚀 Como usar
 
@@ -64,6 +66,7 @@ git checkout v0.1.0  # ou qualquer tag
 - ✅ Sobrescrita de arquivos com fs::write()
 - ✅ Remoção de elementos com Vec::remove()
 - ✅ Tratamento de strings com trim() para remover espaços em branco
+- ✅ Validação de estados com contains() para pré-condições
 
 ## 🎯 Próximos passos
 

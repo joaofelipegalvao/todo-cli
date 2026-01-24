@@ -64,13 +64,22 @@ fn run() -> Result<(), Box<dyn Error>> {
 
             let conteudo = fs::read_to_string("todos.txt")?;
 
-            let mut linhas: Vec<String> = conteudo.lines().map(|l| l.to_string()).collect();
+            let mut linhas: Vec<String> = conteudo
+                .lines()
+                .filter(|l| !l.trim().is_empty())
+                .map(|l| l.to_string())
+                .collect();
 
             if numero == 0 || numero > linhas.len() {
                 return Err("Número de tarefa inválido".into());
             }
 
             let indice = numero - 1;
+
+            if linhas[indice].contains("[x]") {
+                return Err("Tarefa já está marcada como concluída".into());
+            }
+
             linhas[indice] = linhas[indice].replace("[ ]", "[x]");
 
             fs::write("todos.txt", linhas.join("\n") + "\n")?;
@@ -87,13 +96,22 @@ fn run() -> Result<(), Box<dyn Error>> {
 
             let conteudo = fs::read_to_string("todos.txt")?;
 
-            let mut linhas: Vec<String> = conteudo.lines().map(|l| l.to_string()).collect();
+            let mut linhas: Vec<String> = conteudo
+                .lines()
+                .filter(|l| !l.trim().is_empty())
+                .map(|l| l.to_string())
+                .collect();
 
             if numero == 0 || numero > linhas.len() {
                 return Err("Número de tarefa inválido".into());
             }
 
             let indice = numero - 1;
+
+            if linhas[indice].contains("[ ]") {
+                return Err("Tarefa já está desmarcada".into());
+            }
+
             linhas[indice] = linhas[indice].replace("[x]", "[ ]");
 
             fs::write("todos.txt", linhas.join("\n") + "\n")?;
@@ -110,10 +128,14 @@ fn run() -> Result<(), Box<dyn Error>> {
 
             let conteudo = fs::read_to_string("todos.txt")?;
 
-            let mut linhas: Vec<String> = conteudo.lines().map(|l| l.to_string()).collect();
+            let mut linhas: Vec<String> = conteudo
+                .lines()
+                .filter(|l| !l.trim().is_empty())
+                .map(|l| l.to_string())
+                .collect();
 
             if numero == 0 || numero > linhas.len() {
-                return Err("Número de tarefa inválido".into());
+                return Err("Está tarefa não existe ou já foi removida".into());
             }
 
             let indice = numero - 1;
