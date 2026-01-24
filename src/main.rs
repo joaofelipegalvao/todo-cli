@@ -14,7 +14,8 @@ fn run() -> Result<(), Box<dyn Error>> {
 
     if args.len() < 2 {
         return Err(
-            "Uso: todo <comando> [argumentos]\nComandos: add, list, done, undone, remove".into(),
+            "Uso: todo <comando> [argumentos]\nComandos: add, list, done, undone, remove, clear"
+                .into(),
         );
     }
 
@@ -145,6 +146,16 @@ fn run() -> Result<(), Box<dyn Error>> {
 
             println!("✓ Tarefa removida");
         }
+
+        "clear" => {
+            if fs::metadata("todos.txt").is_ok() {
+                fs::remove_file("todos.txt")?;
+                println!("✓ Todas as tarefas foram removidas");
+            } else {
+                println!("Nenhuma tarefa para remover");
+            }
+        }
+
         _ => {
             return Err(format!("Comando desconhecido: {}", comando).into());
         }

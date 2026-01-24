@@ -2,7 +2,7 @@ Gerenciador de tarefas em linha de comando - Projeto de estudo em Rust 🦀
 
 ## 📝 Todo CLI
 
-Este projeto foi desenvolvido em 4 etapas, marcada por tags:
+Este projeto foi desenvolvido em 5 etapas, marcada por tags:
 
 | Versão | Descrição | Conceitos |
 |--------|-----------|-----------|
@@ -12,6 +12,7 @@ Este projeto foi desenvolvido em 4 etapas, marcada por tags:
 | [v4] | Comando undone para desmarcar conclusão | manipulação inversa de estados, lógica booleana |
 | [v4.1] | Correção de bug lógico no comando list | `trim()`, filtro de linhas vazias, tratamento robusto de entrada |
 | [v4.2] | Validações de estado para operações de tarefas | validação de estados duplicados, mensagens de erro específicas, lógica de pré-condições |
+| [v5] | Comando clear para limpar todas as tarefas | `fs::remove_file()`, validação de existência com `fs::metadata()`, tratamento completo de estado |
 
 [v1]: https://github.com/joaofelipegalvao/todo-cli/releases/tag/v0.1.0
 [v2]: https://github.com/joaofelipegalvao/todo-cli/compare/v0.1.0...v0.2.0
@@ -19,6 +20,7 @@ Este projeto foi desenvolvido em 4 etapas, marcada por tags:
 [v4]: https://github.com/joaofelipegalvao/todo-cli/compare/v0.3.0...v0.4.0
 [v4.1]: https://github.com/joaofelipegalvao/todo-cli/compare/v0.4.0...v0.4.1
 [v4.2]: https://github.com/joaofelipegalvao/todo-cli/compare/v0.4.1...v0.4.2
+[v5]: https://github.com/joaofelipegalvao/todo-cli/compare/v0.4.2...v0.5.0
 
 ## 🚀 Como usar
 
@@ -38,6 +40,9 @@ cargo run -- undone 1
 # Remover tarefa
 cargo run -- remove 1
 
+# Limpar todas as tarefas
+cargo run -- clear
+
 # Ver versão específica
 git checkout v0.1.0  # ou qualquer tag
 ```
@@ -51,6 +56,7 @@ git checkout v0.1.0  # ou qualquer tag
 | done | Marca tarefa como concluída | todo done 1 |
 | undone | Desmarca tarefa como concluída | todo undone 1 |
 | remove | Remove tarefa | todo remove 1 |
+| clear | Limpa todas as tarefas | todo clear |
 
 ## 💡 O que aprendi
 
@@ -67,12 +73,14 @@ git checkout v0.1.0  # ou qualquer tag
 - ✅ Remoção de elementos com Vec::remove()
 - ✅ Tratamento de strings com trim() para remover espaços em branco
 - ✅ Validação de estados com contains() para pré-condições
+- ✅ Remoção de arquivos com fs::remove_file() e validação de existência
 
 ## 🎯 Próximos passos
 
 - [x] Comando done para marcar como concluída
 - [x] Comando undone para desmarcar conclusão
 - [x] Comando remove para deletar tarefas
+- [x] Comando clear para limpar todas as tarefas
 - [ ] Persistência de estado (concluídas/pendentes)
 - [ ] Testes unitários
 
