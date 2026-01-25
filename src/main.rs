@@ -2,6 +2,8 @@ use std::fs;
 use std::io::Write;
 use std::{env, error::Error, fs::OpenOptions, process};
 
+use colored::Colorize;
+
 fn main() {
     if let Err(e) = run() {
         eprintln!("Erro: {}", e);
@@ -36,7 +38,7 @@ fn run() -> Result<(), Box<dyn Error>> {
 
             writeln!(file, "[ ] {}", tarefa)?;
 
-            println!("✓ Tarefa adicionada");
+            println!("{}", "✓ Tarefa adicionada".green());
         }
         "list" => match fs::read_to_string("todos.txt") {
             Ok(conteudo) => {
@@ -46,9 +48,49 @@ fn run() -> Result<(), Box<dyn Error>> {
                 if linhas_validas.is_empty() {
                     println!("Nenhuma tarefa");
                 } else {
+                    println!("\n Tarefas:\n");
+
+                    let mut concluidas = 0;
+                    let total = linhas_validas.len();
+
                     for (i, linha) in linhas_validas.iter().enumerate() {
-                        println!("{}. {}", i + 1, linha);
+                        let numero = format!("{}.", i + 1);
+
+                        if linha.contains("[x]") {
+                            let texto = linha.replace("[x]", "").trim().to_string();
+
+                            println!(
+                                "{} {} {}",
+                                numero.dimmed(),
+                                "".green(),
+                                texto.green().strikethrough()
+                            );
+                            concluidas += 1;
+                        } else {
+                            let texto = linha.replace("[ ]", "").trim().to_string();
+                            println!(
+                                "{} {} {}",
+                                numero.dimmed(),
+                                "󰔟".yellow(),
+                                texto.bright_white()
+                            );
+                        }
                     }
+
+                    println!("\n{}", "─".repeat(30).dimmed());
+
+                    let percentual = (concluidas as f32 / total as f32 * 100.0) as u32;
+                    let stats = format!("{} de {} concluídas ({}%)", concluidas, total, percentual);
+
+                    if percentual == 100 {
+                        println!("{}", stats.green().bold());
+                    } else if percentual >= 50 {
+                        println!("{}", stats.yellow());
+                    } else {
+                        println!("{}", stats.red());
+                    }
+
+                    println!();
                 }
             }
             Err(_) => {
@@ -85,7 +127,7 @@ fn run() -> Result<(), Box<dyn Error>> {
 
             fs::write("todos.txt", linhas.join("\n") + "\n")?;
 
-            println!("✓ Tarefa marcada como concluída");
+            println!("{}", "✓ Tarefa marcada como concluída".green());
         }
 
         "undone" => {
@@ -117,7 +159,7 @@ fn run() -> Result<(), Box<dyn Error>> {
 
             fs::write("todos.txt", linhas.join("\n") + "\n")?;
 
-            println!("✓ Tarefa desmarcada");
+            println!("{}", "✓ Tarefa desmarcada".yellow());
         }
 
         "remove" => {
@@ -144,13 +186,13 @@ fn run() -> Result<(), Box<dyn Error>> {
 
             fs::write("todos.txt", linhas.join("\n") + "\n")?;
 
-            println!("✓ Tarefa removida");
+            println!("{}", "✓ Tarefa removida".red());
         }
 
         "clear" => {
             if fs::metadata("todos.txt").is_ok() {
                 fs::remove_file("todos.txt")?;
-                println!("✓ Todas as tarefas foram removidas");
+                println!("{}", "✓ Todas as tarefas foram removidas".red().bold());
             } else {
                 println!("Nenhuma tarefa para remover");
             }
