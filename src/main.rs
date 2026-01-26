@@ -11,12 +11,63 @@ fn main() {
     }
 }
 
+fn exibir_tarefas(tarefas: &[&str], titulo: &str) {
+    println!("\n {}:\n", titulo);
+
+    let mut concluidas = 0;
+    let total = tarefas.len();
+
+    for (i, linha) in tarefas.iter().enumerate() {
+        let numero = format!("{}.", i + 1);
+
+        if linha.contains("[x]") {
+            let texto = linha.replace("[x]", "").trim().to_string();
+            println!(
+                "{} {} {}",
+                numero.dimmed(),
+                "".green(),
+                texto.green().strikethrough()
+            );
+
+            concluidas += 1;
+        } else {
+            let texto = linha.replace("[ ]", "").trim().to_string();
+            println!(
+                "{} {} {}",
+                numero.dimmed(),
+                "󰔟".yellow(),
+                texto.bright_white()
+            );
+        }
+    }
+
+    println!("\n{}", "─".repeat(30).dimmed());
+
+    let percentual = if total > 0 {
+        (concluidas as f32 / total as f32 * 100.0) as u32
+    } else {
+        0
+    };
+
+    let stats = format!("{} de {} concluídas ({}%)", concluidas, total, percentual);
+
+    if percentual == 100 {
+        println!("{}", stats.green().bold());
+    } else if percentual >= 50 {
+        println!("{}", stats.yellow());
+    } else {
+        println!("{}", stats.red());
+    }
+
+    println!();
+}
+
 fn run() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 {
         return Err(
-            "Uso: todo <comando> [argumentos]\nComandos: add, list, done, undone, remove, clear"
+            "Uso: todo <comando> [argumentos]\nComandos: add, list [--pending|--done], done, undone, remove, clear"
                 .into(),
         );
     }
@@ -40,63 +91,70 @@ fn run() -> Result<(), Box<dyn Error>> {
 
             println!("{}", "✓ Tarefa adicionada".green());
         }
-        "list" => match fs::read_to_string("todos.txt") {
-            Ok(conteudo) => {
-                let linhas_validas: Vec<&str> =
-                    conteudo.lines().filter(|l| !l.trim().is_empty()).collect();
+        "list" => {
+            let filtro = if args.len() > 2 {
+                args[2].as_str()
+            } else {
+                "all"
+            };
 
-                if linhas_validas.is_empty() {
-                    println!("Nenhuma tarefa");
-                } else {
-                    println!("\n Tarefas:\n");
+            match fs::read_to_string("todos.txt") {
+                Ok(conteudo) => {
+                    let linhas_validas: Vec<&str> =
+                        conteudo.lines().filter(|l| !l.trim().is_empty()).collect();
 
-                    let mut concluidas = 0;
-                    let total = linhas_validas.len();
+                    if linhas_validas.is_empty() {
+                        println!("Nenhuma tarefa");
+                        return Ok(());
+                    }
 
-                    for (i, linha) in linhas_validas.iter().enumerate() {
-                        let numero = format!("{}.", i + 1);
+                    match filtro {
+                        "--pending" => {
+                            let pendentes: Vec<&str> = linhas_validas
+                                .iter()
+                                .filter(|linha| linha.contains("[ ]"))
+                                .copied()
+                                .collect();
 
-                        if linha.contains("[x]") {
-                            let texto = linha.replace("[x]", "").trim().to_string();
+                            if pendentes.is_empty() {
+                                println!("Nenhuma tarefa pendente");
+                            } else {
+                                exibir_tarefas(&pendentes, "Tarefas pendentes");
+                            }
+                        }
 
-                            println!(
-                                "{} {} {}",
-                                numero.dimmed(),
-                                "".green(),
-                                texto.green().strikethrough()
-                            );
-                            concluidas += 1;
-                        } else {
-                            let texto = linha.replace("[ ]", "").trim().to_string();
-                            println!(
-                                "{} {} {}",
-                                numero.dimmed(),
-                                "󰔟".yellow(),
-                                texto.bright_white()
-                            );
+                        "--done" => {
+                            let concluidas: Vec<&str> = linhas_validas
+                                .iter()
+                                .filter(|linha| linha.contains("[x]"))
+                                .copied()
+                                .collect();
+
+                            if concluidas.is_empty() {
+                                println!("Nenhuma tarefa concluída");
+                            } else {
+                                exibir_tarefas(&concluidas, "Tarefas concluídas");
+                            }
+                        }
+
+                        "all" => {
+                            exibir_tarefas(&linhas_validas, "Tarefas");
+                        }
+
+                        _ => {
+                            return Err(format!(
+                                "Filtro inválido: {}. Use --pending ou --done",
+                                filtro
+                            )
+                            .into());
                         }
                     }
-
-                    println!("\n{}", "─".repeat(30).dimmed());
-
-                    let percentual = (concluidas as f32 / total as f32 * 100.0) as u32;
-                    let stats = format!("{} de {} concluídas ({}%)", concluidas, total, percentual);
-
-                    if percentual == 100 {
-                        println!("{}", stats.green().bold());
-                    } else if percentual >= 50 {
-                        println!("{}", stats.yellow());
-                    } else {
-                        println!("{}", stats.red());
-                    }
-
-                    println!();
+                }
+                Err(_) => {
+                    println!("Nenhuma tarefa");
                 }
             }
-            Err(_) => {
-                println!("Nenhuma tarefa");
-            }
-        },
+        }
 
         "done" => {
             if args.len() < 3 {
