@@ -21,6 +21,7 @@ Este projeto foi desenvolvido de forma incremental. Cada versão adiciona uma fe
 | [v0.7.0] | Filtros avançados (--pending, --done) | flags opcionais, `.filter()`, `.copied()`, funções auxiliares, slices |
 | [v0.8.0] | Prioridades + Filtros de prioridade | `Option<T>`, tuplas, pattern matching com tuplas, pipeline de filtros, validação de flags, títulos dinâmicos, psicologia de cores, defaults inteligentes, fail fast |
 | [v0.9.0] | Ordenação por prioridade | `.sort_by()`, `Ordering` enum, funções de mapeamento, `u8`, pipeline otimizado (filtrar → ordenar), flags booleanas |
+| [v1.0.0] | Busca + Refatoração de exibição | comando `search`, separação parsing/exibição, funções atômicas (`exibir_tarefa`), funções orquestradas (`exibir_tarefas`), reuso sem duplicação |
 
 [v0.1.0]: https://github.com/joaofelipegalvao/todo-cli/releases/tag/v0.1.0
 [v0.2.0]: https://github.com/joaofelipegalvao/todo-cli/compare/v0.1.0...v0.2.0
@@ -33,6 +34,7 @@ Este projeto foi desenvolvido de forma incremental. Cada versão adiciona uma fe
 [v0.7.0]: https://github.com/joaofelipegalvao/todo-cli/compare/v0.6.0...v0.7.0
 [v0.8.0]: https://github.com/joaofelipegalvao/todo-cli/compare/v0.7.0...v0.8.0
 [v0.9.0]: https://github.com/joaofelipegalvao/todo-cli/compare/v0.8.0...v0.9.0
+[v1.0.0]: https://github.com/joaofelipegalvao/todo-cli/compare/v0.9.0...v1.0.0
 
 ## Comandos disponíveis
 
@@ -49,6 +51,7 @@ Este projeto foi desenvolvido de forma incremental. Cada versão adiciona uma fe
 | `list --sort` | Lista tarefas ordenadas por prioridade | `todo list --sort` |
 | `list --pending --high` | Combina filtros de status e prioridade | `todo list --pending --high` |
 | `list --pending --sort` | Pendentes ordenadas por prioridade | `todo list --pending --sort` |
+| `search <termo>` | Busca tarefas que contêm o termo | `todo search "rust"` |
 | `done <número>` | Marca tarefa como concluída | `todo done 1` |
 | `undone <número>` | Desmarca tarefa | `todo undone 1` |
 | `remove <número>` | Remove tarefa específica | `todo remove 1` |
@@ -147,6 +150,10 @@ git checkout v0.1.0  # ou qualquer tag acima
 - Modularização de lógica visual (`emoji_prioridade`)
 - Funções de mapeamento (`prioridade_ordem`) para conversão conceito → número
 - Escolha de tipos apropriados (`u8` vs `i32`) baseada em semântica
+- Funções atômicas (`exibir_tarefa`) para renderização unitária
+- Funções orquestradas (`exibir_tarefas`) para exibição completa com estatísticas
+- Separação clara: parsing de dados vs renderização visual
+- Design de CLI maduro sem duplicação de código
 
 ### Debug e qualidade
 
@@ -200,6 +207,10 @@ todo list
 # Listar ordenadas por prioridade
 todo list --sort
 
+# Buscar tarefas
+todo search "rust"                         # encontra todas com "rust" no texto
+todo search "urgente"                      # mantém numeração original
+
 # Filtrar por status
 todo list --pending
 todo list --done
@@ -236,6 +247,7 @@ cargo run -- add "Estudar Rust"
 cargo run -- add "Reunião urgente" --high
 cargo run -- list
 cargo run -- list --sort
+cargo run -- search "rust"
 cargo run -- list --pending --sort
 cargo run -- done 1
 cargo run -- undone 1
@@ -266,11 +278,14 @@ cargo run -- clear
 - [x] Títulos dinâmicos contextuais
 - [x] Ordenação por prioridade (--sort)
 - [x] Pipeline otimizado (filtrar → ordenar)
+- [x] Comando search para buscar tarefas
+- [x] Refatoração: separação parsing/exibição
+- [x] Funções atômicas e orquestradas
+- [x] Reuso de código sem duplicação
 
 ### Próximos passos
 
 - [ ] Categorias/tags (`#trabalho`, `#casa`)
-- [ ] Busca (`search "rust"`)
 - [ ] Editar tarefa (`edit 1 "novo texto"`)
 - [ ] Data de criação/vencimento
 - [ ] Ordenação por data (`--sort date`)

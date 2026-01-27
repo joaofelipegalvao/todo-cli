@@ -2,7 +2,7 @@ use std::fs;
 use std::io::Write;
 use std::{env, error::Error, fs::OpenOptions, process};
 
-use colored::Colorize;
+use colored::{ColoredString, Colorize};
 
 fn main() {
     if let Err(e) = run() {
@@ -38,44 +38,51 @@ fn extrair_prioridade(linha: &str) -> (&str, String) {
     }
 }
 
-fn emoji_prioridade(prioridade: &str) -> String {
+fn emoji_prioridade(prioridade: &str) -> ColoredString {
     match prioridade {
-        "high" => "".red().to_string(),
-        "low" => "".green().to_string(),
-        _ => "".yellow().to_string(),
+        "high" => "".red(),
+        "low" => "".green(),
+        _ => "".yellow(),
     }
 }
 
-fn exibir_tarefas(tarefas: &[&str], titulo: &str) {
+fn exibir_tarefa(numero: usize, linha: &str) {
+    let numero_fmt = format!("{}.", numero);
+    let concluida = linha.contains("[x]");
+
+    let (prioridade, texto) = extrair_prioridade(linha);
+    let emoji = emoji_prioridade(prioridade);
+
+    if concluida {
+        println!(
+            "{} {} {} {}",
+            numero_fmt.dimmed(),
+            emoji,
+            "󰄵".green(),
+            texto.green().strikethrough()
+        );
+    } else {
+        println!(
+            "{} {} {} {}",
+            numero_fmt.dimmed(),
+            emoji,
+            "".yellow(),
+            texto.bright_white()
+        );
+    }
+}
+
+fn exibir_listas(tarefas: &[&str], titulo: &str) {
     println!("\n {}:\n", titulo);
 
     let mut concluidas = 0;
     let total = tarefas.len();
 
     for (i, linha) in tarefas.iter().enumerate() {
-        let numero = format!("{}.", i + 1);
-        let concluida = linha.contains("[x]");
+        exibir_tarefa(i + 1, linha);
 
-        let (prioridade, texto) = extrair_prioridade(linha);
-        let emoji = emoji_prioridade(prioridade);
-
-        if concluida {
-            println!(
-                "{} {} {} {}",
-                numero.dimmed(),
-                emoji,
-                "󰄵".green(),
-                texto.green().strikethrough()
-            );
+        if linha.contains("[x]") {
             concluidas += 1;
-        } else {
-            println!(
-                "{} {} {} {}",
-                numero.dimmed(),
-                emoji,
-                "".yellow(),
-                texto.bright_white()
-            );
         }
     }
 
@@ -105,7 +112,7 @@ fn run() -> Result<(), Box<dyn Error>> {
 
     if args.len() < 2 {
         return Err(
-            "Uso: todo <comando> [argumentos]\nComandos: add, list [--pending|--done], done, undone, remove, clear"
+            "Uso: todo <comando> [argumentos]\nComandos: add, list [--pending| --done], done, undone, remove, clear"
                 .into(),
         );
     }
@@ -265,7 +272,7 @@ fn run() -> Result<(), Box<dyn Error>> {
                         _ => "Tarefas",
                     };
 
-                    exibir_tarefas(&linhas_validas, titulo);
+                    exibir_listas(&linhas_validas, titulo);
                 }
 
                 Err(_) => {
@@ -336,6 +343,50 @@ fn run() -> Result<(), Box<dyn Error>> {
             fs::write("todos.txt", linhas.join("\n") + "\n")?;
 
             println!("{}", "✓ Tarefa desmarcada".yellow());
+        }
+
+        "search" => {
+            if args.len() < 3 {
+                return Err("Uso: todo search <termo>".into());
+            }
+
+            let termo = &args[2];
+
+            match fs::read_to_string("todos.txt") {
+                Ok(conteudo) => {
+                    let linhas_validas: Vec<&str> =
+                        conteudo.lines().filter(|l| !l.trim().is_empty()).collect();
+
+                    if linhas_validas.is_empty() {
+                        println!("Nenhuma tarefa");
+                        return Ok(());
+                    }
+
+                    let mut resultados: Vec<(usize, &str)> = Vec::new();
+
+                    for (i, linha) in linhas_validas.iter().enumerate() {
+                        if linha.to_lowercase().contains(&termo.to_lowercase()) {
+                            resultados.push((i + 1, linha));
+                        }
+                    }
+
+                    if resultados.is_empty() {
+                        println!("Nenhum resultado para '{}'", termo);
+                    } else {
+                        println!("\n Resultados para \"{}\":\n", termo);
+
+                        for (numero, linha) in &resultados {
+                            exibir_tarefa(*numero, linha);
+                        }
+
+                        println!("\n{} Resultados(s) encontrado(s)\n", resultados.len());
+                    }
+                }
+
+                Err(_) => {
+                    println!("Nenhuma tarefa");
+                }
+            }
         }
 
         "remove" => {
