@@ -6,12 +6,12 @@ use colored::{ColoredString, Colorize};
 
 fn main() {
     if let Err(e) = run() {
-        eprintln!("Erro: {}", e);
+        eprintln!("Error: {}", e);
         process::exit(1);
     }
 }
 
-fn prioridade_ordem(pri: &str) -> u8 {
+fn priority_order(pri: &str) -> u8 {
     match pri {
         "high" => 0,
         "medium" => 1,
@@ -20,85 +20,85 @@ fn prioridade_ordem(pri: &str) -> u8 {
     }
 }
 
-fn extrair_prioridade(linha: &str) -> (&str, String) {
-    let sem_checkbox = linha
+fn extract_priority(line: &str) -> (&str, String) {
+    let without_checkbox = line
         .replace("[ ]", "")
         .replace("[x]", "")
         .trim()
         .to_string();
 
-    if sem_checkbox.contains("(high)") {
-        let texto = sem_checkbox.replace("(high)", "").trim().to_string();
-        ("high", texto)
-    } else if sem_checkbox.contains("(low)") {
-        let texto = sem_checkbox.replace("(low)", "").trim().to_string();
-        ("low", texto)
+    if without_checkbox.contains("(high)") {
+        let text = without_checkbox.replace("(high)", "").trim().to_string();
+        ("high", text)
+    } else if without_checkbox.contains("(low)") {
+        let text = without_checkbox.replace("(low)", "").trim().to_string();
+        ("low", text)
     } else {
-        ("medium", sem_checkbox)
+        ("medium", without_checkbox)
     }
 }
 
-fn emoji_prioridade(prioridade: &str) -> ColoredString {
-    match prioridade {
+fn priority_emoji(priority: &str) -> ColoredString {
+    match priority {
         "high" => "".red(),
         "low" => "".green(),
         _ => "".yellow(),
     }
 }
 
-fn exibir_tarefa(numero: usize, linha: &str) {
-    let numero_fmt = format!("{}.", numero);
-    let concluida = linha.contains("[x]");
+fn display_task(number: usize, line: &str) {
+    let number_fmt = format!("{}.", number);
+    let completed = line.contains("[x]");
 
-    let (prioridade, texto) = extrair_prioridade(linha);
-    let emoji = emoji_prioridade(prioridade);
+    let (priority, text) = extract_priority(line);
+    let emoji = priority_emoji(priority);
 
-    if concluida {
+    if completed {
         println!(
             "{} {} {} {}",
-            numero_fmt.dimmed(),
+            number_fmt.dimmed(),
             emoji,
             "󰄵".green(),
-            texto.green().strikethrough()
+            text.green().strikethrough()
         );
     } else {
         println!(
             "{} {} {} {}",
-            numero_fmt.dimmed(),
+            number_fmt.dimmed(),
             emoji,
             "".yellow(),
-            texto.bright_white()
+            text.bright_white()
         );
     }
 }
 
-fn exibir_listas(tarefas: &[&str], titulo: &str) {
-    println!("\n {}:\n", titulo);
+fn display_lists(tasks: &[&str], title: &str) {
+    println!("\n {}:\n", title);
 
-    let mut concluidas = 0;
-    let total = tarefas.len();
+    let mut completed = 0;
+    let total = tasks.len();
 
-    for (i, linha) in tarefas.iter().enumerate() {
-        exibir_tarefa(i + 1, linha);
+    for (i, line) in tasks.iter().enumerate() {
+        display_task(i + 1, line);
 
-        if linha.contains("[x]") {
-            concluidas += 1;
+        if line.contains("[x]") {
+            completed += 1;
         }
     }
 
     println!("\n{}", "─".repeat(30).dimmed());
 
-    let percentual = if total > 0 {
-        (concluidas as f32 / total as f32 * 100.0) as u32
+    let percentage = if total > 0 {
+        (completed as f32 / total as f32 * 100.0) as u32
     } else {
         0
     };
 
-    let stats = format!("{} de {} concluídas ({}%)", concluidas, total, percentual);
+    let stats = format!("{} of {} completed ({}%)", completed, total, percentage);
 
-    if percentual == 100 {
+    if percentage == 100 {
         println!("{}", stats.green().bold());
-    } else if percentual >= 50 {
+    } else if percentage >= 50 {
         println!("{}", stats.yellow());
     } else {
         println!("{}", stats.red());
@@ -112,33 +112,33 @@ fn run() -> Result<(), Box<dyn Error>> {
 
     if args.len() < 2 {
         return Err(
-            "Uso: todo <comando> [argumentos]\nComandos: add, list [--pending| --done], done, undone, remove, clear"
+            "Usage: todo <command> [arguments]\nCommands: add, list [--pending | --done], done, undone, remove, clear"
                 .into(),
         );
     }
 
-    let comando = &args[1];
+    let command = &args[1];
 
-    match comando.as_str() {
+    match command.as_str() {
         "add" => {
             if args.len() < 3 {
-                return Err("Uso: todo add <tarefa> [--high | --low]".into());
+                return Err("Usage: todo add <task> [--high | --low]".into());
             }
 
-            let tarefa = &args[2];
+            let task = &args[2];
 
-            let linha = match args.len() {
-                3 => format!("[ ] {}", tarefa),
+            let line = match args.len() {
+                3 => format!("[ ] {}", task),
 
                 4 => {
                     let flag = args[3].as_str();
                     match flag {
-                        "--high" => format!("[ ] (high) {}", tarefa),
-                        "--low" => format!("[ ] (low) {}", tarefa),
+                        "--high" => format!("[ ] (high) {}", task),
+                        "--low" => format!("[ ] (low) {}", task),
 
                         _ => {
                             return Err(
-                                format!("Flag inválida '{}'. Use --high ou --low", flag).into()
+                                format!("Invalid flag '{}'. Use --high or --low", flag).into()
                             );
                         }
                     }
@@ -146,8 +146,7 @@ fn run() -> Result<(), Box<dyn Error>> {
 
                 _ => {
                     return Err(
-                        "Uso: todo add <tarefa> [--high | --low]. Apenas uma flag é permitida"
-                            .into(),
+                        "Usage: todo add <task> [--high | --low]. Only one flag is allowed".into(),
                     );
                 }
             };
@@ -157,278 +156,273 @@ fn run() -> Result<(), Box<dyn Error>> {
                 .append(true)
                 .open("todos.txt")?;
 
-            writeln!(file, "{}", linha)?;
+            writeln!(file, "{}", line)?;
 
-            println!("{}", "✓ Tarefa adicionada".green());
+            println!("{}", "✓ Task added".green());
         }
 
         "list" => {
-            let mut filtro_status = "all";
-            let mut filtro_prioridade: Option<&str> = None;
-            let mut ordenar = false;
+            let mut status_filter = "all";
+            let mut priority_filter: Option<&str> = None;
+            let mut sort = false;
 
             for arg in &args[2..] {
                 match arg.as_str() {
                     "--pending" => {
-                        if filtro_status != "all" {
+                        if status_filter != "all" {
                             return Err(
-                                "Use apenas um filtro de status (--pending ou --done).\nExemplo válido: todo list --pending --high".into()
+                                "Use only one status filter (--pending or --done).\nValid example: todo list --pending --high".into()
                             );
                         }
-                        filtro_status = "pending";
+                        status_filter = "pending";
                     }
                     "--done" => {
-                        if filtro_status != "all" {
-                            return Err(
-                                "Use apenas um filtro de status (--done ou --pending).".into()
-                            );
+                        if status_filter != "all" {
+                            return Err("Use only one status filter (--done or --pending).".into());
                         }
-                        filtro_status = "done";
+                        status_filter = "done";
                     }
                     "--high" => {
-                        if filtro_prioridade.is_some() {
-                            return Err(
-                                "Use apenas um filtro de prioridade (--high ou --low)".into()
-                            );
+                        if priority_filter.is_some() {
+                            return Err("Use only one priority filter (--high or --low)".into());
                         }
-                        filtro_prioridade = Some("high");
+                        priority_filter = Some("high");
                     }
                     "--low" => {
-                        if filtro_prioridade.is_some() {
-                            return Err(
-                                "Use apenas um filtro de prioridade (--low ou --high)".into()
-                            );
+                        if priority_filter.is_some() {
+                            return Err("Use only one priority filter (--low or --high)".into());
                         }
 
-                        filtro_prioridade = Some("low");
+                        priority_filter = Some("low");
                     }
                     "--sort" => {
-                        if ordenar {
-                            return Err("Use --sort apenas uma vez.".into());
+                        if sort {
+                            return Err("Use --sort only once.".into());
                         }
-                        ordenar = true;
+                        sort = true;
                     }
-                    _ => return Err(format!("Filtro inválido: {}", arg).into()),
+                    _ => return Err(format!("Invalid filter: {}", arg).into()),
                 }
             }
 
             match fs::read_to_string("todos.txt") {
-                Ok(conteudo) => {
-                    let mut linhas_validas: Vec<&str> =
-                        conteudo.lines().filter(|l| !l.trim().is_empty()).collect();
+                Ok(content) => {
+                    let mut valid_lines: Vec<&str> =
+                        content.lines().filter(|l| !l.trim().is_empty()).collect();
 
-                    if linhas_validas.is_empty() {
-                        println!("Nenhuma tarefa");
+                    if valid_lines.is_empty() {
+                        println!("No tasks");
                         return Ok(());
                     }
 
-                    linhas_validas = match filtro_status {
-                        "pending" => linhas_validas
+                    valid_lines = match status_filter {
+                        "pending" => valid_lines
                             .iter()
                             .filter(|l| l.contains("[ ]"))
                             .copied()
                             .collect(),
-                        "done" => linhas_validas
+                        "done" => valid_lines
                             .iter()
                             .filter(|l| l.contains("[x]"))
                             .copied()
                             .collect(),
-                        _ => linhas_validas,
+                        _ => valid_lines,
                     };
 
-                    if let Some(pri) = filtro_prioridade {
-                        linhas_validas = linhas_validas
+                    if let Some(pri) = priority_filter {
+                        valid_lines = valid_lines
                             .iter()
-                            .filter(|linha| {
-                                let (prioridade, _) = extrair_prioridade(linha);
-                                prioridade == pri
+                            .filter(|line| {
+                                let (priority, _) = extract_priority(line);
+                                priority == pri
                             })
                             .copied()
                             .collect();
                     }
 
-                    if linhas_validas.is_empty() {
-                        println!("Nenhuma tarefa encontrada com esses filtros");
+                    if valid_lines.is_empty() {
+                        println!("No tasks found with these filters");
                         return Ok(());
                     }
 
-                    if ordenar {
-                        linhas_validas.sort_by(|a, b| {
-                            let (pri_a, _) = extrair_prioridade(a);
-                            let (pri_b, _) = extrair_prioridade(b);
-                            prioridade_ordem(pri_a).cmp(&prioridade_ordem(pri_b))
+                    if sort {
+                        valid_lines.sort_by(|a, b| {
+                            let (pri_a, _) = extract_priority(a);
+                            let (pri_b, _) = extract_priority(b);
+                            priority_order(pri_a).cmp(&priority_order(pri_b))
                         });
                     }
 
-                    let titulo = match (filtro_status, filtro_prioridade) {
-                        ("pending", Some("high")) => "Tarefas pendentes de alta prioridade",
-                        ("pending", Some("low")) => "Tarefas pendentes de baixa prioridade",
-                        ("pending", None) => "Tarefas pendentes",
-                        ("done", Some("high")) => "Tarefas concluídas de alta prioridade",
-                        ("done", Some("low")) => "Tarefas concluídas de baixa prioridade",
-                        ("done", None) => "Tarefas concluídas",
-                        (_, Some("high")) => "Alta prioridade",
-                        (_, Some("low")) => "Baixa prioridade",
-                        _ => "Tarefas",
+                    let title = match (status_filter, priority_filter) {
+                        ("pending", Some("high")) => "High priority pending tasks",
+                        ("pending", Some("low")) => "Low priority pending tasks",
+                        ("pending", None) => "Pending tasks",
+                        ("done", Some("high")) => "High priority completed tasks",
+                        ("done", Some("low")) => "Low priority completed tasks",
+                        ("done", None) => "Completed tasks",
+                        (_, Some("high")) => "High priority",
+                        (_, Some("low")) => "Low priority",
+                        _ => "Tasks",
                     };
 
-                    exibir_listas(&linhas_validas, titulo);
+                    display_lists(&valid_lines, title);
                 }
 
                 Err(_) => {
-                    println!("Nenhuma tarefa");
+                    println!("No tasks");
                 }
             }
         }
 
         "done" => {
             if args.len() < 3 {
-                return Err("Uso: todo done <número>".into());
+                return Err("Usage: todo done <number>".into());
             }
 
-            let numero: usize = args[2].parse()?;
+            let number: usize = args[2].parse()?;
 
-            let conteudo = fs::read_to_string("todos.txt")?;
+            let content = fs::read_to_string("todos.txt")?;
 
-            let mut linhas: Vec<String> = conteudo
+            let mut lines: Vec<String> = content
                 .lines()
                 .filter(|l| !l.trim().is_empty())
                 .map(|l| l.to_string())
                 .collect();
 
-            if numero == 0 || numero > linhas.len() {
-                return Err("Número de tarefa inválido".into());
+            if number == 0 || number > lines.len() {
+                return Err("Invalid task number".into());
             }
 
-            let indice = numero - 1;
+            let index = number - 1;
 
-            if linhas[indice].contains("[x]") {
-                return Err("Tarefa já está marcada como concluída".into());
+            if lines[index].contains("[x]") {
+                return Err("Task is already marked as completed".into());
             }
 
-            linhas[indice] = linhas[indice].replace("[ ]", "[x]");
+            lines[index] = lines[index].replace("[ ]", "[x]");
 
-            fs::write("todos.txt", linhas.join("\n") + "\n")?;
+            fs::write("todos.txt", lines.join("\n") + "\n")?;
 
-            println!("{}", "✓ Tarefa marcada como concluída".green());
+            println!("{}", "✓ Task marked as completed".green());
         }
 
         "undone" => {
             if args.len() < 3 {
-                return Err("Uso: todo undone <número>".into());
+                return Err("Usage: todo undone <number>".into());
             }
 
-            let numero: usize = args[2].parse()?;
+            let number: usize = args[2].parse()?;
 
-            let conteudo = fs::read_to_string("todos.txt")?;
+            let content = fs::read_to_string("todos.txt")?;
 
-            let mut linhas: Vec<String> = conteudo
+            let mut lines: Vec<String> = content
                 .lines()
                 .filter(|l| !l.trim().is_empty())
                 .map(|l| l.to_string())
                 .collect();
 
-            if numero == 0 || numero > linhas.len() {
-                return Err("Número de tarefa inválido".into());
+            if number == 0 || number > lines.len() {
+                return Err("Invalid task number".into());
             }
 
-            let indice = numero - 1;
+            let index = number - 1;
 
-            if linhas[indice].contains("[ ]") {
-                return Err("Tarefa já está desmarcada".into());
+            if lines[index].contains("[ ]") {
+                return Err("Task is already unmarked".into());
             }
 
-            linhas[indice] = linhas[indice].replace("[x]", "[ ]");
+            lines[index] = lines[index].replace("[x]", "[ ]");
 
-            fs::write("todos.txt", linhas.join("\n") + "\n")?;
+            fs::write("todos.txt", lines.join("\n") + "\n")?;
 
-            println!("{}", "✓ Tarefa desmarcada".yellow());
+            println!("{}", "✓ Task unmarked".yellow());
         }
 
         "search" => {
             if args.len() < 3 {
-                return Err("Uso: todo search <termo>".into());
+                return Err("Usage: todo search <term>".into());
             }
 
-            let termo = &args[2];
+            let term = &args[2];
 
             match fs::read_to_string("todos.txt") {
-                Ok(conteudo) => {
-                    let linhas_validas: Vec<&str> =
-                        conteudo.lines().filter(|l| !l.trim().is_empty()).collect();
+                Ok(content) => {
+                    let valid_lines: Vec<&str> =
+                        content.lines().filter(|l| !l.trim().is_empty()).collect();
 
-                    if linhas_validas.is_empty() {
-                        println!("Nenhuma tarefa");
+                    if valid_lines.is_empty() {
+                        println!("No tasks");
                         return Ok(());
                     }
 
-                    let mut resultados: Vec<(usize, &str)> = Vec::new();
+                    let mut results: Vec<(usize, &str)> = Vec::new();
 
-                    for (i, linha) in linhas_validas.iter().enumerate() {
-                        if linha.to_lowercase().contains(&termo.to_lowercase()) {
-                            resultados.push((i + 1, linha));
+                    for (i, line) in valid_lines.iter().enumerate() {
+                        if line.to_lowercase().contains(&term.to_lowercase()) {
+                            results.push((i + 1, line));
                         }
                     }
 
-                    if resultados.is_empty() {
-                        println!("Nenhum resultado para '{}'", termo);
+                    if results.is_empty() {
+                        println!("No results for '{}'", term);
                     } else {
-                        println!("\n Resultados para \"{}\":\n", termo);
+                        println!("\n Results for \"{}\":\n", term);
 
-                        for (numero, linha) in &resultados {
-                            exibir_tarefa(*numero, linha);
+                        for (number, line) in &results {
+                            display_task(*number, line);
                         }
 
-                        println!("\n{} Resultados(s) encontrado(s)\n", resultados.len());
+                        println!("\n{} result(s) found\n", results.len());
                     }
                 }
 
                 Err(_) => {
-                    println!("Nenhuma tarefa");
+                    println!("No tasks");
                 }
             }
         }
 
         "remove" => {
             if args.len() < 3 {
-                return Err("Uso: todo remove <número>".into());
+                return Err("Usage: todo remove <number>".into());
             }
 
-            let numero: usize = args[2].parse()?;
+            let number: usize = args[2].parse()?;
 
-            let conteudo = fs::read_to_string("todos.txt")?;
+            let content = fs::read_to_string("todos.txt")?;
 
-            let mut linhas: Vec<String> = conteudo
+            let mut lines: Vec<String> = content
                 .lines()
                 .filter(|l| !l.trim().is_empty())
                 .map(|l| l.to_string())
                 .collect();
 
-            if numero == 0 || numero > linhas.len() {
-                return Err("Está tarefa não existe ou já foi removida".into());
+            if number == 0 || number > lines.len() {
+                return Err("This task doesn't exist or was already removed".into());
             }
 
-            let indice = numero - 1;
-            linhas.remove(indice);
+            let index = number - 1;
+            lines.remove(index);
 
-            fs::write("todos.txt", linhas.join("\n") + "\n")?;
+            fs::write("todos.txt", lines.join("\n") + "\n")?;
 
-            println!("{}", "✓ Tarefa removida".red());
+            println!("{}", "✓ Task removed".red());
         }
 
         "clear" => {
             if fs::metadata("todos.txt").is_ok() {
                 fs::remove_file("todos.txt")?;
-                println!("{}", "✓ Todas as tarefas foram removidas".red().bold());
+                println!("{}", "✓ All tasks have been removed".red().bold());
             } else {
-                println!("Nenhuma tarefa para remover");
+                println!("No tasks to remove");
             }
         }
 
         _ => {
-            return Err(format!("Comando desconhecido: {}", comando).into());
+            return Err(format!("Unknown command: {}", command).into());
         }
     }
 
     Ok(())
 }
+
