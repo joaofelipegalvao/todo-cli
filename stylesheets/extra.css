@@ -2,7 +2,6 @@
    RUST-THEMED CUSTOMIZATION
    ======================================== */
 
-/* === Cores Rust === */
 :root {
   --rust-orange: #CE422B;
   --rust-light: #F74C00;
@@ -11,21 +10,18 @@
   --code-border: var(--rust-orange);
 }
 
-/* === Dark Mode Colors === */
 [data-md-color-scheme="slate"] {
   --md-primary-fg-color: var(--rust-orange);
   --md-accent-fg-color: var(--rust-accent);
   --md-typeset-a-color: var(--rust-light);
 }
 
-/* === Light Mode Colors === */
 [data-md-color-scheme="default"] {
   --md-primary-fg-color: var(--rust-orange);
   --md-accent-fg-color: var(--rust-accent);
   --md-typeset-a-color: var(--rust-dark);
 }
 
-/* === Logo/Header Customization === */
 .md-header {
   background: linear-gradient(135deg, var(--rust-dark) 0%, var(--rust-orange) 100%);
 }
@@ -35,7 +31,6 @@
   letter-spacing: 0.5px;
 }
 
-/* === Navigation Tabs === */
 .md-tabs {
   background: linear-gradient(135deg, var(--rust-orange) 0%, var(--rust-light) 100%);
 }
@@ -45,31 +40,25 @@
   border-bottom: 3px solid white;
 }
 
-/* === Code Blocks === */
 .highlight {
   border-left: 4px solid var(--code-border);
   border-radius: 4px;
   margin: 1.5em 0;
 }
 
-/* Dark Mode - fundo escuro */
 [data-md-color-scheme="slate"] .highlight {
   background-color: #2b2b2b !important;
 }
 
-/* Light Mode - fundo claro */
 [data-md-color-scheme="default"] .highlight {
   background-color: #f5f5f5 !important;
 }
 
-/* Rust code específico */
 .highlight .language-rust {
   border-left-color: var(--rust-orange);
   border-left-width: 5px;
 }
 
-/* === Inline Code === */
-/* Dark Mode */
 [data-md-color-scheme="slate"] code {
   background-color: rgba(206, 66, 43, 0.2) !important;
   color: var(--rust-light) !important;
@@ -79,7 +68,6 @@
   font-weight: 600;
 }
 
-/* Light Mode */
 [data-md-color-scheme="default"] code {
   background-color: rgba(206, 66, 43, 0.1) !important;
   color: var(--rust-dark) !important;
@@ -89,7 +77,6 @@
   font-weight: 600;
 }
 
-/* === Copy Button Customization === */
 .md-clipboard {
   color: var(--rust-orange) !important;
 }
@@ -98,13 +85,11 @@
   color: var(--rust-light) !important;
 }
 
-/* === Links === */
 a {
   text-decoration: none;
   transition: all 0.2s ease;
 }
 
-/* Links no conteúdo - cor Rust */
 .md-content a,
 .md-typeset a,
 article a {
@@ -117,14 +102,12 @@ article a {
   color: var(--rust-light) !important;
 }
 
-/* Hover nos links do conteúdo */
 .md-content a:hover,
 .md-typeset a:hover {
   color: var(--rust-orange) !important;
   text-decoration: underline;
 }
 
-/* Links nas tabs/header - hover branco */
 .md-tabs a:hover,
 .md-header a:hover {
   color: white !important;
@@ -132,7 +115,6 @@ article a {
   opacity: 0.9;
 }
 
-/* REMOVER ROXO de links visitados */
 a:visited,
 .md-content a:visited,
 .md-typeset a:visited,
@@ -147,7 +129,6 @@ article a:visited {
   color: var(--rust-light) !important;
 }
 
-/* Links na navegação lateral */
 .md-nav__link {
   color: inherit;
   transition: color 0.2s ease;
@@ -157,13 +138,11 @@ article a:visited {
   color: var(--rust-orange) !important;
 }
 
-/* Garantir que links visitados na navegação não mudem */
 .md-nav a:visited,
 .md-tabs a:visited {
   color: currentColor !important;
 }
 
-/* === Admonitions (Callouts) === */
 .admonition {
   border-left: 4px solid;
   border-radius: 4px;
@@ -171,7 +150,6 @@ article a:visited {
   margin: 1.5em 0;
 }
 
-/* Rust-specific admonition */
 .admonition.rust {
   border-color: var(--rust-orange);
 }
@@ -186,7 +164,6 @@ article a:visited {
   margin-right: 0.5em;
 }
 
-/* === Table of Contents (Right Sidebar) === */
 .md-sidebar--secondary {
   border-left: 1px solid rgba(206, 66, 43, 0.2);
 }
@@ -196,7 +173,6 @@ article a:visited {
   font-weight: 700;
 }
 
-/* === Tables === */
 table {
   border-collapse: collapse;
   border-radius: 6px;
@@ -240,7 +216,6 @@ blockquote {
   font-style: italic;
 }
 
-/* === Horizontal Rules === */
 hr {
   border: none;
   height: 2px;
@@ -248,7 +223,6 @@ hr {
   margin: 2em 0;
 }
 
-/* === Search Bar === */
 .md-search__input {
   border: 2px solid transparent;
   transition: border-color 0.2s ease;
@@ -258,7 +232,6 @@ hr {
   border-color: var(--rust-orange);
 }
 
-/* === Scrollbar Customization === */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -277,18 +250,15 @@ hr {
   background: var(--rust-dark);
 }
 
-/* === Version Badge === */
 .md-version__current {
   background-color: var(--rust-orange) !important;
   color: white !important;
 }
 
-/* === Footer === */
 .md-footer {
   background: linear-gradient(135deg, var(--rust-dark) 0%, var(--rust-orange) 100%);
 }
 
-/* === Badges (para usar inline) === */
 .badge {
   display: inline-block;
   padding: 0.25em 0.6em;
@@ -317,14 +287,12 @@ hr {
   color: white;
 }
 
-/* === Custom Emoji Sizing === */
 .twemoji {
   width: 1.2em;
   height: 1.2em;
   vertical-align: middle;
 }
 
-/* === Keyboard Keys === */
 kbd {
   background-color: #f7f7f7;
   border: 1px solid #ccc;
@@ -340,7 +308,6 @@ kbd {
   text-shadow: 0 1px 0 #fff;
 }
 
-/* === Tabs (Tabbed Content) === */
 .tabbed-set {
   margin: 1.5em 0;
 }
@@ -350,13 +317,11 @@ kbd {
   font-weight: 700;
 }
 
-/* === Task Lists === */
 .task-list-item input[type="checkbox"]:checked+* {
   text-decoration: line-through;
   opacity: 0.6;
 }
 
-/* === Animations === */
 @keyframes rust-glow {
 
   0%,
@@ -373,7 +338,6 @@ kbd {
   animation: rust-glow 2s ease-in-out;
 }
 
-/* === Mobile Responsiveness === */
 @media screen and (max-width: 768px) {
   .md-header__title {
     font-size: 0.9em;
@@ -384,7 +348,6 @@ kbd {
   }
 }
 
-/* === Print Styles === */
 @media print {
 
   .md-header,
