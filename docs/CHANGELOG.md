@@ -17,15 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unit tests
 - TUI (Terminal User Interface)
 
-### Changed
-
-- Migrated project documentation to MkDocs
-- Replaced legacy markdown docs with structured MkDocs layout
-
-### Removed
-
-- Deprecated `LEARNING.md`
-
 ## [1.6.0] - 2026-02-04
 
 ### Added

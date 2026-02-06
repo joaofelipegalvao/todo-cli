@@ -113,8 +113,10 @@ todo list --help       # Detailed filtering options
 ## Documentation
 
 - **[Complete Guide](docs/GUIDE.md)** - All commands and examples
-- **[Learning Journey](docs/LEARNING.md)** - How this project evolved, version by version
+- **[Complete Documentation](https://joaofelipegalvao.github.io/todo-cli/)** - Full learning journey, concepts, and examples
 - **[Changelog](CHANGELOG.md)** - Version history
+
+---
 
 ## Educational Project
 
@@ -132,7 +134,7 @@ This project was developed as a Rust learning exercise, documenting each increme
 | v1.5.0 | Due dates | `chrono`, `NaiveDate`, date validation |
 | v1.6.0 | Professional CLI | `clap`, derive macros, type-safe enums, auto-help |
 
-[See full evolution →](docs/LEARNING.md)
+[See full evolution →](docs/wiki/)]
 
 ### For Students
 
@@ -183,7 +185,7 @@ Contributions are welcome! This is a learning project, so feel free to:
 - **Suggest features** - Share your ideas
 - **Improve documentation** - Fix typos, add examples
 - **Submit PRs** - Fix bugs or add features
-- **Share learning insights** - Add to LEARNING.md
+- **Share learning insights** - Add to the wiki
 
 ### Development
 

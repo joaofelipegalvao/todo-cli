@@ -1,0 +1,133 @@
+site_name: Todo CLI - Rust Learning Journey
+site_description: Complete documentation of learning Rust by building a CLI todo app
+site_author: João Felipe Galvão
+site_url: https://joaofelipegalvao.github.io/todo-cli
+
+repo_name: joaofelipegalvao/todo-cli
+repo_url: https://github.com/joaofelipegalvao/todo-cli
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: en
+
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    - scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.tracking
+    - toc.follow
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.action.edit
+    - content.action.view
+
+# Navigation - Ajustado para seus arquivos reais
+nav:
+  - Home: index.md
+
+  - Getting Started:
+      - v0.1 - Basic CLI: getting-started/v0.1.0-basic-cli.md
+      - v0.2 - Done Command: getting-started/v0.2.0-done-command.md
+      - v0.3 - Remove Command: getting-started/v0.3.0-remove-command.md
+      - v0.4 - Undone Command: getting-started/v0.4.0-undone-command.md
+      - v0.4.1 - List Bug Fix: getting-started/v0.4.1-list-bug-fix.md
+      - v0.4.2 - State Validations: getting-started/v0.4.2-state-validations.md
+      - v0.5 - Clear Command: getting-started/v0.5.0-clear-command.md
+
+  - Concepts:
+      - CLI Design: concepts/cli-design.md
+      - Error Handling: concepts/error-handling.md
+      - File Operations: concepts/file-operations.md
+      - Type Safety: concepts/type-safety.md
+
+  - Intermediate:
+      - v0.6 - Visual Interface: intermediate/v0.6.0-visual-interface-colors.md
+      - v0.7 - Advanced Filters: intermediate/v0.7.0-advanced-filters.md
+      - v0.8 - Priority System: intermediate/v0.8.0-priority-system.md
+      - v0.9 - Priority Sorting: intermediate/v0.9.0-priority-sorting.md
+      - v1.0 - Search Refactoring: intermediate/v1.0.0-search-refactoring.md
+      - v1.1 - Medium Priority Filter: intermediate/v1.1.0-medium-priority-filter.md
+
+  - Advanced:
+      - v1.2 - Struct Refactoring: advanced/v1.2.0-struct-refactoring.md
+      - v1.3 - JSON Serialization: advanced/v1.3.0-json-serialization.md
+      - v1.4 - Tags System: advanced/v1.4.0-tags-system.md
+      - v1.5 - Due Dates Tabular: advanced/v1.5.0-due-dates-tabular.md
+      - v1.6 - Professional CLI Clap: advanced/v1.6.0-professional-cli-clap.md
+
+  - Changelog: CHANGELOG.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.keys
+  - pymdownx.smartsymbols
+  - pymdownx.critic
+  - pymdownx.caret
+  - pymdownx.mark
+  - pymdownx.tilde
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - def_list
+  - footnotes
+  - tables
+  - abbr
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - toc:
+      permalink: true
+      permalink_title: Link to this section
+      toc_depth: 3
+
+plugins:
+  - search:
+      lang: en
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/joaofelipegalvao
+      name: GitHub Profile
+
+extra_css:
+  - stylesheets/extra.css
+
+copyright: Copyright &copy; 2024-2026 João Felipe Galvão
