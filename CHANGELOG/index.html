@@ -1,0 +1,2813 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Complete documentation of learning Rust by building a CLI todo app">
+      
+      
+        <meta name="author" content="João Felipe Galvão">
+      
+      
+        <link rel="canonical" href="https://joaofelipegalvao.github.io/todo-cli/CHANGELOG/">
+      
+      
+        <link rel="prev" href="../advanced/v1.6.0-professional-cli-clap/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Changelog - Todo CLI - Rust Learning Journey</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#changelog" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Todo CLI - Rust Learning Journey" class="md-header__button md-logo" aria-label="Todo CLI - Rust Learning Journey" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Todo CLI - Rust Learning Journey
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Changelog
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/joaofelipegalvao/todo-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    joaofelipegalvao/todo-cli
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../getting-started/v0.1.0-basic-cli/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../concepts/cli-design/" class="md-tabs__link">
+          
+  
+  
+  Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../intermediate/v0.6.0-visual-interface-colors/" class="md-tabs__link">
+          
+  
+  
+  Intermediate
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../advanced/v1.2.0-struct-refactoring/" class="md-tabs__link">
+          
+  
+  
+  Advanced
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Todo CLI - Rust Learning Journey" class="md-nav__button md-logo" aria-label="Todo CLI - Rust Learning Journey" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Todo CLI - Rust Learning Journey
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/joaofelipegalvao/todo-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    joaofelipegalvao/todo-cli
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/v0.1.0-basic-cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.1 - Basic CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/v0.2.0-done-command/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.2 - Done Command
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/v0.3.0-remove-command/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.3 - Remove Command
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/v0.4.0-undone-command/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.4 - Undone Command
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/v0.4.1-list-bug-fix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.4.1 - List Bug Fix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/v0.4.2-state-validations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.4.2 - State Validations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/v0.5.0-clear-command/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.5 - Clear Command
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/cli-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/error-handling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Error Handling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/file-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    File Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/type-safety/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Type Safety
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Intermediate
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Intermediate
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../intermediate/v0.6.0-visual-interface-colors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.6 - Visual Interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../intermediate/v0.7.0-advanced-filters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.7 - Advanced Filters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../intermediate/v0.8.0-priority-system/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.8 - Priority System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../intermediate/v0.9.0-priority-sorting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.9 - Priority Sorting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../intermediate/v1.0.0-search-refactoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v1.0 - Search Refactoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../intermediate/v1.1.0-medium-priority-filter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v1.1 - Medium Priority Filter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/v1.2.0-struct-refactoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v1.2 - Struct Refactoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/v1.3.0-json-serialization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v1.3 - JSON Serialization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/v1.4.0-tags-system/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v1.4 - Tags System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/v1.5.0-due-dates-tabular/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v1.5 - Due Dates Tabular
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/v1.6.0-professional-cli-clap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v1.6 - Professional CLI Clap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#changelog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changelog
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unreleased
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Unreleased">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#planned" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Planned
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#160-2026-02-04" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.6.0 - 2026-02-04
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.6.0 - 2026-02-04">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#technical-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Technical Details
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#migration-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migration Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#150-2026-02-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.5.0 - 2026-02-03
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.5.0 - 2026-02-03">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#technical-details_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Technical Details
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#migration-notes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migration Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#140-2026-01-31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4.0 - 2026-01-31
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.4.0 - 2026-01-31">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#technical-details_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Technical Details
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#130-2026-01-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3.0 - 2026-01-30
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.3.0 - 2026-01-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Removed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#technical-details_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Technical Details
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#migration-notes_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migration Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#120-2026-01-29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2.0 - 2026-01-29
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.2.0 - 2026-01-29">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#technical-details_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Technical Details
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#110-2026-01-28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1.0 - 2026-01-28
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.1.0 - 2026-01-28">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#101-2026-01-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.0.1 - 2026-01-27
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.0.1 - 2026-01-27">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#100-2026-01-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.0.0 - 2026-01-27
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.0.0 - 2026-01-27">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#090-2026-01-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.9.0 - 2026-01-27
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.9.0 - 2026-01-27">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#080-2026-01-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.8.0 - 2026-01-26
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.8.0 - 2026-01-26">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#070-2026-01-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.7.0 - 2026-01-26
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.7.0 - 2026-01-26">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#060-2026-01-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.6.0 - 2026-01-25
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.6.0 - 2026-01-25">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#050-2026-01-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5.0 - 2026-01-24
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.5.0 - 2026-01-24">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#042-2026-01-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.4.2 - 2026-01-23
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.4.2 - 2026-01-23">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#041-2026-01-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.4.1 - 2026-01-23
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.4.1 - 2026-01-23">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#040-2026-01-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.4.0 - 2026-01-23
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.4.0 - 2026-01-23">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#030-2026-01-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3.0 - 2026-01-23
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.3.0 - 2026-01-23">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#020-2026-01-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.2.0 - 2026-01-23
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.2.0 - 2026-01-23">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#010-2026-01-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.0 - 2026-01-23
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.1.0 - 2026-01-23">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/joaofelipegalvao/todo-cli/edit/main/docs/CHANGELOG.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+    
+      
+    
+    <a href="https://github.com/joaofelipegalvao/todo-cli/raw/main/docs/CHANGELOG.md" title="View source of this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
+    </a>
+  
+
+
+  <h1>Changelog</h1>
+
+<h2 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Link to this section">&para;</a></h2>
+<p>All notable changes to this project will be documented in this file.</p>
+<p>The format is based on <a href="https://keepachangelog.com/en/1.0.0/">Keep a Changelog</a>,
+and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
+<h2 id="unreleased"><a href="https://github.com/joaofelipegalvao/todo-cli/compare/v1.6.0...HEAD">Unreleased</a><a class="headerlink" href="#unreleased" title="Link to this section">&para;</a></h2>
+<h3 id="planned">Planned<a class="headerlink" href="#planned" title="Link to this section">&para;</a></h3>
+<ul>
+<li>Edit command</li>
+<li>Recurring tasks</li>
+<li>Subtasks/nested tasks</li>
+<li>Export/import commands</li>
+<li>Shell completions (bash, zsh, fish)</li>
+<li>Unit tests</li>
+<li>TUI (Terminal User Interface)</li>
+</ul>
+<h2 id="160-2026-02-04"><a href="https://github.com/joaofelipegalvao/todo-cli/compare/v1.5.0...v1.6.0">1.6.0</a> - 2026-02-04<a class="headerlink" href="#160-2026-02-04" title="Link to this section">&para;</a></h2>
+<h3 id="added">Added<a class="headerlink" href="#added" title="Link to this section">&para;</a></h3>
+<ul>
+<li><strong>Professional CLI framework</strong> using <code>clap</code> crate (v4.5) with derive macros</li>
+<li><strong>Type-safe filtering</strong> with enum-based arguments</li>
+<li><code>StatusFilter</code> enum: <code>All</code>, <code>Pending</code>, <code>Done</code> (replaces boolean flags)</li>
+<li><code>DueFilter</code> enum: <code>Overdue</code>, <code>Soon</code>, <code>WithDue</code>, <code>NoDue</code> (replaces 4 boolean flags)</li>
+<li><code>SortBy</code> enum: <code>Priority</code>, <code>Due</code>, <code>Created</code> (replaces string-based sorting)</li>
+<li><code>ValueEnum</code> trait implementation on <code>Priority</code> for CLI value parsing</li>
+<li><strong>Auto-generated help text</strong> with <code>#[command()]</code> attributes</li>
+<li>Command-level help with <code>long_about</code> descriptions</li>
+<li>Argument-level help with doc comments (appear in <code>--help</code> output)</li>
+<li><strong>Command aliases</strong> for improved productivity:</li>
+<li><code>a</code> for <code>add</code></li>
+<li><code>ls</code> for <code>list</code></li>
+<li><code>rm</code> and <code>delete</code> for <code>remove</code></li>
+<li><strong>Automatic argument parsing</strong> with type safety and validation</li>
+<li><strong>Automatic NaiveDate parsing</strong> using <code>clap::value_parser!(NaiveDate)</code></li>
+<li>Professional error messages with context and suggestions</li>
+<li><code>Cli</code> struct with <code>#[derive(Parser)]</code> for top-level command handling</li>
+<li><code>Commands</code> enum with <code>#[derive(Subcommand)]</code> for subcommand routing</li>
+<li><code>AddArgs</code> struct with <code>#[derive(Args)]</code> for complex add command arguments</li>
+<li>Short flags: <code>-t</code> for <code>--tag</code>, <code>-s</code> for <code>--sort</code></li>
+<li>Repeatable arguments: <code>--tag</code> can be used multiple times</li>
+<li><code>Task::matches_status()</code> helper method for status filtering</li>
+<li><code>Task::matches_due_filter()</code> helper method for due date filtering</li>
+<li>Metadata in help output: program name, author, version, examples</li>
+<li><code>after_help</code> examples section showing common usage patterns</li>
+</ul>
+<h3 id="changed">Changed<a class="headerlink" href="#changed" title="Link to this section">&para;</a></h3>
+<ul>
+<li><strong>BREAKING CHANGE:</strong> Complete CLI interface redesigned with Clap</li>
+<li><strong>BREAKING CHANGE:</strong> Command syntax updated across all commands:</li>
+<li><code>--high/--medium/--low</code> → <code>--priority high/medium/low</code></li>
+<li><code>--pending/--done</code> → <code>--status pending/done/all</code></li>
+<li><code>--overdue/--due-soon/--with-due/--without-due</code> → <code>--due overdue/soon/with-due/no-due</code></li>
+<li><code>--sort</code> → <code>--sort priority/due/created</code></li>
+<li><strong>BREAKING CHANGE:</strong> Priority values in JSON now lowercase (<code>"high"</code>, <code>"medium"</code>, <code>"low"</code>)</li>
+<li><code>Priority</code> enum: Added <code>ValueEnum</code> derive for CLI integration</li>
+<li>Argument parsing: Manual <code>env::args()</code> parsing → Clap derive macros</li>
+<li>Help generation: Manual help strings → Automatic from struct attributes</li>
+<li>Validation: Manual conflict checking → Automatic with type system</li>
+<li>Error messages: Generic strings → Contextual clap-generated errors</li>
+<li><code>main()</code> function: Simplified with <code>Cli::parse()</code> handling all parsing</li>
+<li>Filter mutual exclusion: Runtime checks → Compile-time type safety with enums</li>
+<li>Boolean filter flags (4 for dates) → Single <code>Option&lt;DueFilter&gt;</code> enum</li>
+<li>Parsing complexity: ~100 lines of manual parsing → ~20 lines of declarative structs</li>
+<li>Code organization: Flat argument handling → Structured with dedicated types</li>
+</ul>
+<h3 id="removed">Removed<a class="headerlink" href="#removed" title="Link to this section">&para;</a></h3>
+<ul>
+<li>Manual argument parsing with <code>env::args().collect()</code></li>
+<li>Manual flag conflict validation (15+ lines)</li>
+<li>Manual help text construction</li>
+<li>Generic "Usage: ..." error messages</li>
+<li>Manual <code>NaiveDate</code> parsing and error handling (8 lines → 1 line with <code>value_parser!</code>)</li>
+<li>Boolean flags for status filters (<code>--pending</code>, <code>--done</code>)</li>
+<li>Boolean flags for priority filters (<code>--high</code>, <code>--medium</code>, <code>--low</code>)</li>
+<li>Boolean flags for date filters (<code>--overdue</code>, <code>--due-soon</code>, <code>--with-due</code>, <code>--without-due</code>)</li>
+<li>String-based sorting validation</li>
+</ul>
+<h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Link to this section">&para;</a></h3>
+<ul>
+<li>Eliminated possibility of conflicting filter flags (enforced by type system)</li>
+<li>Improved error messages with suggestions for typos (e.g., "did you mean 'high'?")</li>
+<li>Consistent argument naming across all commands</li>
+<li>Professional command-line interface matching industry standards</li>
+</ul>
+<h3 id="technical-details">Technical Details<a class="headerlink" href="#technical-details" title="Link to this section">&para;</a></h3>
+<ul>
+<li><strong>Dependencies:</strong></li>
+<li>Added: <code>clap = { version = "4.5", features = ["derive"] }</code></li>
+<li>Enables derive macros for declarative CLI definition</li>
+<li><strong>Code reduction:</strong> ~100 lines of parsing code → ~20 lines of struct definitions</li>
+<li><strong>Type safety improvements:</strong></li>
+<li><code>StatusFilter</code> enum prevents invalid status values at compile time</li>
+<li><code>DueFilter</code> enum ensures only one date filter used (via <code>Option&lt;T&gt;</code>)</li>
+<li><code>SortBy</code> enum validates sort fields at compile time</li>
+<li><code>Priority</code> as <code>ValueEnum</code> enables automatic CLI parsing</li>
+<li><strong>Derive macros used:</strong></li>
+<li><code>#[derive(Parser)]</code> on <code>Cli</code> - top-level command parsing</li>
+<li><code>#[derive(Subcommand)]</code> on <code>Commands</code> - subcommand routing</li>
+<li><code>#[derive(Args)]</code> on <code>AddArgs</code> - grouped arguments for complex commands</li>
+<li><code>#[derive(ValueEnum)]</code> on enums - enables use as CLI values</li>
+<li><strong>Attribute annotations:</strong></li>
+<li><code>#[command(name, author, version, about, after_help)]</code> - metadata</li>
+<li><code>#[arg(long, short, value_enum, default_value_t)]</code> - argument configuration</li>
+<li><code>#[command(visible_alias)]</code> - command aliases</li>
+<li>Doc comments (<code>///</code>) automatically become help text</li>
+<li><strong>Pattern matching:</strong></li>
+<li><code>Option&lt;DueFilter&gt;</code> enables <code>if let Some(filter)</code> pattern for optional filters</li>
+<li><code>match</code> on enums is exhaustive (compiler enforces handling all cases)</li>
+<li><strong>Automatic behaviors:</strong></li>
+<li><code>--help</code> and <code>-h</code> flags generated automatically</li>
+<li><code>--version</code> and <code>-V</code> flags generated automatically</li>
+<li>Error handling with exit codes (0 for success, non-zero for errors)</li>
+<li>Suggestions for typos in values (e.g., "hgh" suggests "high")</li>
+<li>Color-coded help output in supported terminals</li>
+<li><strong>Integration points:</strong></li>
+<li><code>Cli::parse()</code> consumes <code>std::env::args()</code> automatically</li>
+<li><code>value_parser!(NaiveDate)</code> uses <code>FromStr</code> trait from chrono</li>
+<li>Enums with <code>ValueEnum</code> get case-insensitive parsing by default</li>
+</ul>
+<h3 id="migration-notes">Migration Notes<a class="headerlink" href="#migration-notes" title="Link to this section">&para;</a></h3>
+<p>Upgrading from v1.5.0:</p>
+<p><strong>Command syntax changes required:</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Old (v1.5.0):</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>todo<span class="w"> </span>add<span class="w"> </span><span class="s2">&quot;Task&quot;</span><span class="w"> </span>--high<span class="w"> </span>--tag<span class="w"> </span>work
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>todo<span class="w"> </span>list<span class="w"> </span>--pending<span class="w"> </span>--high<span class="w"> </span>--overdue<span class="w"> </span>--sort
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># New (v1.6.0):</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>todo<span class="w"> </span>add<span class="w"> </span><span class="s2">&quot;Task&quot;</span><span class="w"> </span>--priority<span class="w"> </span>high<span class="w"> </span>--tag<span class="w"> </span>work
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>todo<span class="w"> </span>list<span class="w"> </span>--status<span class="w"> </span>pending<span class="w"> </span>--priority<span class="w"> </span>high<span class="w"> </span>--due<span class="w"> </span>overdue<span class="w"> </span>--sort<span class="w"> </span>priority
+</span></code></pre></div>
+<p><strong>Complete syntax mapping:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Old Flag (v1.5.0)</th>
+<th>New Argument (v1.6.0)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--high</code></td>
+<td><code>--priority high</code></td>
+</tr>
+<tr>
+<td><code>--medium</code></td>
+<td><code>--priority medium</code></td>
+</tr>
+<tr>
+<td><code>--low</code></td>
+<td><code>--priority low</code></td>
+</tr>
+<tr>
+<td><code>--pending</code></td>
+<td><code>--status pending</code></td>
+</tr>
+<tr>
+<td><code>--done</code></td>
+<td><code>--status done</code></td>
+</tr>
+<tr>
+<td><code>--overdue</code></td>
+<td><code>--due overdue</code></td>
+</tr>
+<tr>
+<td><code>--due-soon</code></td>
+<td><code>--due soon</code></td>
+</tr>
+<tr>
+<td><code>--with-due</code></td>
+<td><code>--due with-due</code></td>
+</tr>
+<tr>
+<td><code>--without-due</code></td>
+<td><code>--due no-due</code></td>
+</tr>
+<tr>
+<td><code>--sort</code> (bool)</td>
+<td><code>--sort priority\|due\|created</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Data compatibility:</strong></p>
+<ul>
+<li>JSON file format (<code>todos.json</code>) remains fully compatible</li>
+<li>Priority values in JSON change from <code>"High"</code> to <code>"high"</code> (lowercase)</li>
+<li>Existing tasks automatically migrate on first load</li>
+<li>No manual data migration needed</li>
+<li>All task data, tags, and dates preserved</li>
+</ul>
+<p><strong>New features available:</strong></p>
+<ul>
+<li>Use <code>todo --help</code> for comprehensive command help</li>
+<li>Use <code>todo &lt;command&gt; --help</code> for command-specific help</li>
+<li>Try command aliases: <code>todo a</code>, <code>todo ls</code>, <code>todo rm</code></li>
+<li>Explore short flags: <code>-t</code> for tags, <code>-s</code> for sort</li>
+</ul>
+<p><strong>Breaking changes to address:</strong></p>
+<ol>
+<li>Update any scripts using the old flag syntax</li>
+<li>Priority values in JSON will be lowercase after first save</li>
+<li>Sorting now requires explicit field name (not just <code>--sort</code>)</li>
+<li>Status filter now explicit (no implicit "all" without flag)</li>
+</ol>
+<h2 id="150-2026-02-03"><a href="https://github.com/joaofelipegalvao/todo-cli/compare/v1.4.0...v1.5.0">1.5.0</a> - 2026-02-03<a class="headerlink" href="#150-2026-02-03" title="Link to this section">&para;</a></h2>
+<h3 id="added_1">Added<a class="headerlink" href="#added_1" title="Link to this section">&para;</a></h3>
+<ul>
+<li><strong>Due date tracking</strong> with <code>chrono</code> crate</li>
+<li><code>due_date</code> field in <code>Task</code> struct (<code>Option&lt;NaiveDate&gt;</code>)</li>
+<li><code>created_at</code> field in <code>Task</code> struct (<code>NaiveDate</code>) - automatic timestamp on task creation</li>
+<li><code>--due YYYY-MM-DD</code> flag for <code>add</code> command to set task deadlines</li>
+<li><code>--overdue</code> filter to list tasks past their due date</li>
+<li><code>--due-soon</code> filter to list tasks due in the next 7 days</li>
+<li><code>--with-due</code> filter to list tasks that have a due date</li>
+<li><code>--without-due</code> filter to list tasks without a due date</li>
+<li><code>--sort due</code> option to sort tasks by due date (earliest first)</li>
+<li><code>--sort created</code> option to sort tasks by creation date (oldest first)</li>
+<li><code>Task::is_overdue()</code> method to check if task is past due date</li>
+<li><code>Task::is_due_soon(days: i64)</code> method to check if task is due within N days</li>
+<li>Date parsing with <code>NaiveDate::parse_from_str()</code> using format <code>%Y-%m-%d</code></li>
+<li>Color-coded due date display:</li>
+<li>Red + Bold: Overdue (e.g., "late 3 days")</li>
+<li>Yellow + Bold: Due today (e.g., "due today")</li>
+<li>Yellow: Due soon, 1-7 days (e.g., "in 5 days")</li>
+<li>Cyan: Future, 8+ days (e.g., "in 30 days")</li>
+<li><strong>Tabular display format</strong> for professional task listing</li>
+<li>Dynamic column width calculation based on content</li>
+<li><code>display_task_tabular()</code> function for formatted output</li>
+<li><code>calculate_column_widths()</code> function for optimal column sizing</li>
+<li><code>get_due_text()</code> function for human-readable due date formatting</li>
+<li><code>get_due_colored()</code> function for urgency-based coloring</li>
+<li>Header row with column labels: <code>ID</code>, <code>P</code> (Priority), <code>S</code> (Status), <code>Task</code>, <code>Tags</code>, <code>Due</code></li>
+<li>Separator line for visual clarity</li>
+<li>String truncation with ellipsis for long task names and tags</li>
+<li>Date arithmetic using <code>chrono::Duration</code> for calculating days until due</li>
+</ul>
+<h3 id="changed_1">Changed<a class="headerlink" href="#changed_1" title="Link to this section">&para;</a></h3>
+<ul>
+<li><strong>BREAKING CHANGE:</strong> Priority display changed from emojis (🔴🟡🟢) to letters (H/M/L)</li>
+<li><code>Priority::emoji()</code> renamed to <code>Priority::letter()</code></li>
+<li>More professional and terminal-friendly appearance</li>
+<li>Consistent column width in tabular format</li>
+<li><strong>BREAKING CHANGE:</strong> Task display format completely redesigned</li>
+<li>Old: <code>1. 🔴 ⏳ Study Rust [learning, programming]</code></li>
+<li>New: Tabular format with aligned columns</li>
+</ul>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>  ID  P  S  Task           Tags              Due
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>────────────────────────────────────────────────────
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>   1  H  ⏳  Study Rust     learning, prog... in 5 days
+</span></code></pre></div>
+<ul>
+<li><code>Task::new()</code> signature: now accepts <code>due_date: Option&lt;NaiveDate&gt;</code> parameter</li>
+<li><code>Task</code> JSON format: includes <code>due_date</code> (nullable) and <code>created_at</code> (required)</li>
+<li><code>--sort</code> flag: renamed from boolean to value-based (<code>priority</code>, <code>due</code>, <code>created</code>)</li>
+<li>Due date sorting: tasks with dates come before tasks without dates</li>
+<li>Completed tasks no longer display due date information</li>
+<li>Maximum column widths enforced (task: 40 chars, tags: 20 chars, due: 20 chars)</li>
+<li>Minimum column widths enforced (task: 10 chars, tags: 4 chars, due: 3 chars)</li>
+</ul>
+<h3 id="fixed_1">Fixed<a class="headerlink" href="#fixed_1" title="Link to this section">&para;</a></h3>
+<ul>
+<li>Mutual exclusion validation for date filters (can't use multiple date filters together)</li>
+<li>Proper handling of <code>None</code> values in due date sorting</li>
+<li>Grammar in due date text ("1 day" vs "2 days")</li>
+<li>Visual hierarchy with color-coding guides attention to urgent items</li>
+</ul>
+<h3 id="technical-details_1">Technical Details<a class="headerlink" href="#technical-details_1" title="Link to this section">&para;</a></h3>
+<ul>
+<li><code>chrono</code> crate added with <code>serde</code> feature for automatic date serialization</li>
+<li><code>NaiveDate</code> used for dates (no timezone information needed for due dates)</li>
+<li>Date creation: <code>Local::now().naive_local().date()</code> for current date</li>
+<li>Date comparison: direct comparison operators (<code>&lt;</code>, <code>&gt;</code>, <code>==</code>) work on <code>NaiveDate</code></li>
+<li>Pattern matching on <code>Option&lt;NaiveDate&gt;</code> for flexible due date handling</li>
+<li>Format specifiers: <code>{:&gt;3}</code> (right-align), <code>{:&lt;40}</code> (left-align with width)</li>
+<li>String slicing for truncation: <code>&amp;text[..width-3]</code> with "..." suffix</li>
+<li>Four-way pattern matching in due date sort for handling <code>Option</code> combinations</li>
+<li>Tabular format uses <code>print!()</code> for inline formatting and <code>println!()</code> for line breaks</li>
+<li>Date filters use <code>retain()</code> to preserve task indices</li>
+</ul>
+<h3 id="migration-notes_1">Migration Notes<a class="headerlink" href="#migration-notes_1" title="Link to this section">&para;</a></h3>
+<p>Upgrading from v1.4.0:</p>
+<ul>
+<li>Old tasks remain compatible - <code>due_date</code> defaults to <code>null</code></li>
+<li><code>created_at</code> will be set to current date on first load for existing tasks</li>
+<li>No data loss - all existing fields preserved</li>
+<li>New fields can be added manually to JSON if needed</li>
+<li>Priority indicators will display as letters instead of emojis</li>
+</ul>
+<h2 id="140-2026-01-31"><a href="https://github.com/joaofelipegalvao/todo-cli/compare/v1.3.0...v1.4.0">1.4.0</a> - 2026-01-31<a class="headerlink" href="#140-2026-01-31" title="Link to this section">&para;</a></h2>
+<h3 id="added_2">Added<a class="headerlink" href="#added_2" title="Link to this section">&para;</a></h3>
+<ul>
+<li><strong>Tags system</strong> for task categorization</li>
+<li><code>tags</code> field in <code>Task</code> struct (<code>Vec&lt;String&gt;</code>)</li>
+<li><code>--tag &lt;name&gt;</code> flag for <code>add</code> command (can be used multiple times)</li>
+<li><code>--tag &lt;name&gt;</code> filter for <code>list</code> command</li>
+<li><code>--tag &lt;name&gt;</code> filter for <code>search</code> command</li>
+<li><code>tags</code> command to list all tags with task counts</li>
+<li>Tag display in task output (colored cyan for pending, dimmed for completed)</li>
+</ul>
+<h3 id="changed_2">Changed<a class="headerlink" href="#changed_2" title="Link to this section">&para;</a></h3>
+<ul>
+<li><code>Task::new()</code> signature: now accepts <code>tags: Vec&lt;String&gt;</code> parameter</li>
+<li><code>display_task()</code>: Added tag display after task text</li>
+<li><code>list</code> command: Added tag filtering with <code>--tag</code> flag</li>
+<li><code>search</code> command: Added tag filtering with <code>--tag</code> flag</li>
+<li>Task display format: shows tags as <code>[tag1, tag2]</code> after task text</li>
+</ul>
+<h3 id="fixed_2">Fixed<a class="headerlink" href="#fixed_2" title="Link to this section">&para;</a></h3>
+<ul>
+<li><strong>Critical bug:</strong> Task numbering now maintains original indices when filtering</li>
+<li>Before: Filtered lists showed renumbered tasks (1, 2, 3...), causing <code>done</code>/<code>undone</code>/<code>remove</code> to operate on wrong tasks</li>
+<li>After: Filtered lists show original task numbers, ensuring commands work correctly</li>
+<li>Changed <code>display_lists()</code> to accept <code>Vec&lt;(usize, &amp;Task)&gt;</code> with original indices</li>
+<li>All filter operations now use <code>retain()</code> instead of <code>filter().collect()</code> to preserve indices</li>
+</ul>
+<h3 id="technical-details_2">Technical Details<a class="headerlink" href="#technical-details_2" title="Link to this section">&para;</a></h3>
+<ul>
+<li>Tags are stored as <code>Vec&lt;String&gt;</code> in JSON</li>
+<li>Empty tag vectors serialize to <code>[]</code> in JSON</li>
+<li>Tag filtering is case-sensitive (matches exact tag names)</li>
+<li><code>tags</code> command deduplicates and sorts tags alphabetically</li>
+<li>Original task numbering preserved through tuple <code>(usize, &amp;Task)</code> pattern</li>
+<li>Serde automatically handles tags serialization/deserialization</li>
+</ul>
+<h2 id="130-2026-01-30"><a href="https://github.com/joaofelipegalvao/todo-cli/compare/v1.2.0...v1.3.0">1.3.0</a> - 2026-01-30<a class="headerlink" href="#130-2026-01-30" title="Link to this section">&para;</a></h2>
+<h3 id="added_3">Added<a class="headerlink" href="#added_3" title="Link to this section">&para;</a></h3>
+<ul>
+<li>JSON serialization using <code>serde</code> and <code>serde_json</code></li>
+<li>Automatic serialization/deserialization with derive macros</li>
+<li><code>#[derive(Serialize, Deserialize)]</code> on <code>Task</code> and <code>Priority</code></li>
+<li>Pretty-printed JSON output with <code>to_string_pretty()</code></li>
+<li>Automatic type validation and descriptive error messages</li>
+<li>Universal format support (JSON as standard)</li>
+</ul>
+<h3 id="changed_3">Changed<a class="headerlink" href="#changed_3" title="Link to this section">&para;</a></h3>
+<ul>
+<li><strong>BREAKING CHANGE:</strong> File format migrated from custom text (<code>todos.txt</code>) to JSON (<code>todos.json</code>)</li>
+<li><code>load_tasks()</code>: Replaced manual parsing with <code>serde_json::from_str()</code> (12 lines → 3 lines)</li>
+<li><code>save_tasks()</code>: Replaced manual formatting with <code>serde_json::to_string_pretty()</code> (4 lines → 2 lines)</li>
+<li>Storage file: <code>todos.txt</code> → <code>todos.json</code></li>
+<li><code>clear</code> command: Updated to delete <code>todos.json</code> instead of <code>todos.txt</code></li>
+</ul>
+<h3 id="removed_1">Removed<a class="headerlink" href="#removed_1" title="Link to this section">&para;</a></h3>
+<ul>
+<li><code>Task::to_line()</code> method - replaced by automatic serialization (12 lines deleted)</li>
+<li><code>Task::from_line()</code> method - replaced by automatic deserialization (25 lines deleted)</li>
+<li>All custom text parsing logic (37 lines total)</li>
+</ul>
+<h3 id="technical-details_3">Technical Details<a class="headerlink" href="#technical-details_3" title="Link to this section">&para;</a></h3>
+<ul>
+<li><strong>91% code reduction</strong> in I/O operations (53 lines → 5 lines)</li>
+<li>Serde generates 100+ lines of optimized serialization code automatically</li>
+<li>Format-agnostic design allows easy migration to TOML, YAML, or binary formats</li>
+<li>Extensibility: Adding new fields now requires only 1 line (struct field) instead of 30+ lines (parser updates)</li>
+<li>Better error messages: "missing field <code>priority</code> at line 4 column 3" vs generic parsing errors</li>
+<li>Git-friendly: JSON diffs clearly show what changed</li>
+<li>Tooling support: Can use <code>jq</code>, JSON validators, formatters, etc.</li>
+</ul>
+<h3 id="migration-notes_2">Migration Notes<a class="headerlink" href="#migration-notes_2" title="Link to this section">&para;</a></h3>
+<p>Users need to migrate from <code>todos.txt</code> to <code>todos.json</code>:</p>
+<ul>
+<li>Option 1: Start fresh (delete <code>todos.txt</code>, recreate tasks)</li>
+<li>Option 2: Manual migration (convert old format to JSON)</li>
+<li>Future: Migration script could be provided</li>
+</ul>
+<h2 id="120-2026-01-29"><a href="https://github.com/joaofelipegalvao/todo-cli/compare/v1.1.0...v1.2.0">1.2.0</a> - 2026-01-29<a class="headerlink" href="#120-2026-01-29" title="Link to this section">&para;</a></h2>
+<h3 id="added_4">Added<a class="headerlink" href="#added_4" title="Link to this section">&para;</a></h3>
+<ul>
+<li>Type-safe architecture with structs and enums</li>
+<li><code>Priority</code> enum (High, Medium, Low) replacing string-based priorities</li>
+<li><code>Task</code> struct encapsulating task data (text, completed, priority)</li>
+<li><code>impl</code> blocks with methods: <code>new()</code>, <code>to_line()</code>, <code>from_line()</code>, <code>mark_done()</code>, <code>mark_undone()</code></li>
+<li>Centralized I/O with <code>load_tasks()</code> and <code>save_tasks()</code> helper functions</li>
+<li>Derive macros: <code>Debug</code>, <code>Clone</code>, <code>PartialEq</code>, <code>Copy</code> for type safety</li>
+</ul>
+<h3 id="changed_4">Changed<a class="headerlink" href="#changed_4" title="Link to this section">&para;</a></h3>
+<ul>
+<li><strong>BREAKING CHANGE:</strong> Complete refactoring from string parsing to struct-based architecture</li>
+<li>All commands now use <code>Task</code> struct instead of raw string manipulation</li>
+<li>Parsing logic centralized in <code>Task::from_line()</code> method</li>
+<li>File I/O consolidated into two functions (36% code reduction)</li>
+<li><code>add</code> command: uses <code>Task::new()</code> constructor</li>
+<li><code>done</code>/<code>undone</code> commands: use <code>task.mark_done()</code>/<code>task.mark_undone()</code> methods</li>
+<li><code>list</code> command: type-safe field access (<code>task.completed</code>, <code>task.priority</code>)</li>
+<li>Priority comparison: string matching → enum comparison</li>
+<li>Display logic: uses <code>Priority::emoji()</code> and <code>Priority::order()</code> methods</li>
+</ul>
+<h3 id="fixed_3">Fixed<a class="headerlink" href="#fixed_3" title="Link to this section">&para;</a></h3>
+<ul>
+<li>Ownership issues with priority filters using <code>Copy</code> trait</li>
+<li>Clippy warnings: redundant closures replaced with function pointers</li>
+<li>Type safety: compiler now catches priority typos at compile time</li>
+</ul>
+<h3 id="technical-details_4">Technical Details<a class="headerlink" href="#technical-details_4" title="Link to this section">&para;</a></h3>
+<ul>
+<li>Code metrics: ~180 lines → ~115 lines (36% reduction)</li>
+<li>Maintainability: Adding new fields now requires changes in only 3 places instead of 7+</li>
+<li>Extensibility: Easy to add timestamps, tags, subtasks in future versions</li>
+<li>Type safety: No more runtime errors from typos like <code>"hihg"</code></li>
+</ul>
+<h2 id="110-2026-01-28"><a href="https://github.com/joaofelipegalvao/todo-cli/compare/v1.0.1...v1.1.0">1.1.0</a> - 2026-01-28<a class="headerlink" href="#110-2026-01-28" title="Link to this section">&para;</a></h2>
+<h3 id="added_5">Added<a class="headerlink" href="#added_5" title="Link to this section">&para;</a></h3>
+<ul>
+<li><code>--medium</code> flag to filter tasks by medium priority</li>
+<li>Complete symmetry in priority filtering (high/medium/low)</li>
+<li>Dynamic titles for medium priority task combinations</li>
+</ul>
+<h3 id="changed_5">Changed<a class="headerlink" href="#changed_5" title="Link to this section">&para;</a></h3>
+<ul>
+<li>Updated help messages to include <code>--medium</code> option</li>
+<li>Improved consistency between task creation and filtering</li>
+</ul>
+<h3 id="fixed_4">Fixed<a class="headerlink" href="#fixed_4" title="Link to this section">&para;</a></h3>
+<ul>
+<li>Design flaw: users can now filter by medium priority, completing the priority filter set</li>
+</ul>
+<h2 id="101-2026-01-27"><a href="https://github.com/joaofelipegalvao/todo-cli/compare/v1.0.0...v1.0.1">1.0.1</a> - 2026-01-27<a class="headerlink" href="#101-2026-01-27" title="Link to this section">&para;</a></h2>
+<h3 id="changed_6">Changed<a class="headerlink" href="#changed_6" title="Link to this section">&para;</a></h3>
+<ul>
+<li><strong>BREAKING CHANGE:</strong> Entire codebase translated to English</li>
+<li>All variable names Portuguese → English</li>
+<li>All function names Portuguese → English  </li>
+<li>All user-facing messages Portuguese → English</li>
+<li>All dynamic titles and error messages now in English</li>
+<li>Achieve full consistency with English documentation</li>
+<li>Updated function names: <code>extrair_prioridade</code> → <code>extract_priority</code>, etc.</li>
+</ul>
+<h2 id="100-2026-01-27"><a href="https://github.com/joaofelipegalvao/todo-cli/compare/v0.9.0...v1.0.0">1.0.0</a> - 2026-01-27<a class="headerlink" href="#100-2026-01-27" title="Link to this section">&para;</a></h2>
+<h3 id="added_6">Added<a class="headerlink" href="#added_6" title="Link to this section">&para;</a></h3>
+<ul>
+<li><code>search &lt;term&gt;</code> command to search tasks by term</li>
+<li><code>display_task()</code> function for atomic rendering</li>
+<li><code>display_lists()</code> function for list rendering with statistics</li>
+</ul>
+<h3 id="changed_7">Changed<a class="headerlink" href="#changed_7" title="Link to this section">&para;</a></h3>
+<ul>
+<li>Complete refactoring: separation of parsing vs rendering</li>
+<li>Better code reuse without duplication</li>
+</ul>
+<h3 id="fixed_5">Fixed<a class="headerlink" href="#fixed_5" title="Link to this section">&para;</a></h3>
+<ul>
+<li>Correct numbering in search command</li>
+</ul>
+<h2 id="090-2026-01-27"><a href="https://github.com/joaofelipegalvao/todo-cli/compare/v0.8.0...v0.9.0">0.9.0</a> - 2026-01-27<a class="headerlink" href="#090-2026-01-27" title="Link to this section">&para;</a></h2>
+<h3 id="added_7">Added<a class="headerlink" href="#added_7" title="Link to this section">&para;</a></h3>
+<ul>
+<li><code>--sort</code> flag to sort tasks by priority</li>
+<li><code>priority_order()</code> function for high/medium/low mapping</li>
+<li>Optimized pipeline: filter → then sort</li>
+</ul>
+<h2 id="080-2026-01-26"><a href="https://github.com/joaofelipegalvao/todo-cli/compare/v0.7.0...v0.8.0">0.8.0</a> - 2026-01-26<a class="headerlink" href="#080-2026-01-26" title="Link to this section">&para;</a></h2>
+<h3 id="added_8">Added<a class="headerlink" href="#added_8" title="Link to this section">&para;</a></h3>
+<ul>
+<li>Priority system (high, medium, low)</li>
+<li><code>--high</code> and <code>--low</code> flags to filter by priority</li>
+<li>Colored emojis (🔴 🟡 🟢) for visual indication</li>
+<li><code>extract_priority()</code> function for parsing</li>
+<li><code>priority_emoji()</code> function for rendering</li>
+<li>Filter combination (status + priority)</li>
+<li>Conflicting flags validation</li>
+<li>Dynamic titles based on context</li>
+</ul>
+<h2 id="070-2026-01-26"><a href="https://github.com/joaofelipegalvao/todo-cli/compare/v0.6.0...v0.7.0">0.7.0</a> - 2026-01-26<a class="headerlink" href="#070-2026-01-26" title="Link to this section">&para;</a></h2>
+<h3 id="added_9">Added<a class="headerlink" href="#added_9" title="Link to this section">&para;</a></h3>
+<ul>
+<li><code>--pending</code> and <code>--done</code> flags to filter by status</li>
+<li>Filter combination support</li>
+<li>Helper functions for code reuse</li>
+</ul>
+<h2 id="060-2026-01-25"><a href="https://github.com/joaofelipegalvao/todo-cli/compare/v0.5.0...v0.6.0">0.6.0</a> - 2026-01-25<a class="headerlink" href="#060-2026-01-25" title="Link to this section">&para;</a></h2>
+<h3 id="added_10">Added<a class="headerlink" href="#added_10" title="Link to this section">&para;</a></h3>
+<ul>
+<li>Colorful visual interface using <code>colored</code> crate</li>
+<li>Visual hierarchy with dimmed/bold formatting</li>
+<li>Progress counter with percentage</li>
+<li>Color-coded priority indicators</li>
+</ul>
+<h2 id="050-2026-01-24"><a href="https://github.com/joaofelipegalvao/todo-cli/compare/v0.4.2...v0.5.0">0.5.0</a> - 2026-01-24<a class="headerlink" href="#050-2026-01-24" title="Link to this section">&para;</a></h2>
+<h3 id="added_11">Added<a class="headerlink" href="#added_11" title="Link to this section">&para;</a></h3>
+<ul>
+<li><code>clear</code> command to remove all tasks</li>
+<li>File existence validation with <code>fs::metadata()</code></li>
+</ul>
+<h2 id="042-2026-01-23"><a href="https://github.com/joaofelipegalvao/todo-cli/compare/v0.4.1...v0.4.2">0.4.2</a> - 2026-01-23<a class="headerlink" href="#042-2026-01-23" title="Link to this section">&para;</a></h2>
+<h3 id="fixed_6">Fixed<a class="headerlink" href="#fixed_6" title="Link to this section">&para;</a></h3>
+<ul>
+<li>State validation to prevent duplicate operations</li>
+<li>More specific error messages</li>
+</ul>
+<h2 id="041-2026-01-23"><a href="https://github.com/joaofelipegalvao/todo-cli/compare/v0.4.0...v0.4.1">0.4.1</a> - 2026-01-23<a class="headerlink" href="#041-2026-01-23" title="Link to this section">&para;</a></h2>
+<h3 id="fixed_7">Fixed<a class="headerlink" href="#fixed_7" title="Link to this section">&para;</a></h3>
+<ul>
+<li>Bug in <code>list</code> command with empty lines</li>
+<li>Robust line filtering with <code>trim()</code></li>
+</ul>
+<h2 id="040-2026-01-23"><a href="https://github.com/joaofelipegalvao/todo-cli/compare/v0.3.0...v0.4.0">0.4.0</a> - 2026-01-23<a class="headerlink" href="#040-2026-01-23" title="Link to this section">&para;</a></h2>
+<h3 id="added_12">Added<a class="headerlink" href="#added_12" title="Link to this section">&para;</a></h3>
+<ul>
+<li><code>undone</code> command to unmark tasks</li>
+</ul>
+<h2 id="030-2026-01-23"><a href="https://github.com/joaofelipegalvao/todo-cli/compare/v0.2.0...v0.3.0">0.3.0</a> - 2026-01-23<a class="headerlink" href="#030-2026-01-23" title="Link to this section">&para;</a></h2>
+<h3 id="added_13">Added<a class="headerlink" href="#added_13" title="Link to this section">&para;</a></h3>
+<ul>
+<li><code>remove</code> command to delete specific tasks</li>
+<li>Index validation</li>
+<li>Comprehensive error handling</li>
+</ul>
+<h2 id="020-2026-01-23"><a href="https://github.com/joaofelipegalvao/todo-cli/compare/v0.1.0...v0.2.0">0.2.0</a> - 2026-01-23<a class="headerlink" href="#020-2026-01-23" title="Link to this section">&para;</a></h2>
+<h3 id="added_14">Added<a class="headerlink" href="#added_14" title="Link to this section">&para;</a></h3>
+<ul>
+<li><code>done</code> command to mark tasks as completed</li>
+<li>String manipulation with <code>.replace()</code>, <code>.map()</code>, <code>.collect()</code></li>
+</ul>
+<h2 id="010-2026-01-23"><a href="https://github.com/joaofelipegalvao/todo-cli/releases/tag/v0.1.0">0.1.0</a> - 2026-01-23<a class="headerlink" href="#010-2026-01-23" title="Link to this section">&para;</a></h2>
+<h3 id="added_15">Added<a class="headerlink" href="#added_15" title="Link to this section">&para;</a></h3>
+<ul>
+<li><code>add</code> command to add tasks</li>
+<li><code>list</code> command to list all tasks</li>
+<li>Basic file operations with <code>OpenOptions</code></li>
+<li>Pattern matching for subcommands</li>
+<li>Error handling with <code>?</code> operator</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2024-2026 João Felipe Galvão
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/joaofelipegalvao" target="_blank" rel="noopener" title="GitHub Profile" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "navigation.tracking", "toc.follow", "toc.integrate", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.action.edit", "content.action.view"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

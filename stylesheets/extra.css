@@ -1,0 +1,400 @@
+/* ========================================
+   RUST-THEMED CUSTOMIZATION
+   ======================================== */
+
+/* === Cores Rust === */
+:root {
+  --rust-orange: #CE422B;
+  --rust-light: #F74C00;
+  --rust-dark: #A33B27;
+  --rust-accent: #FF8C42;
+  --code-border: var(--rust-orange);
+}
+
+/* === Dark Mode Colors === */
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: var(--rust-orange);
+  --md-accent-fg-color: var(--rust-accent);
+  --md-typeset-a-color: var(--rust-light);
+}
+
+/* === Light Mode Colors === */
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: var(--rust-orange);
+  --md-accent-fg-color: var(--rust-accent);
+  --md-typeset-a-color: var(--rust-dark);
+}
+
+/* === Logo/Header Customization === */
+.md-header {
+  background: linear-gradient(135deg, var(--rust-dark) 0%, var(--rust-orange) 100%);
+}
+
+.md-header__title {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* === Navigation Tabs === */
+.md-tabs {
+  background: linear-gradient(135deg, var(--rust-orange) 0%, var(--rust-light) 100%);
+}
+
+.md-tabs__link--active {
+  font-weight: 700;
+  border-bottom: 3px solid white;
+}
+
+/* === Code Blocks === */
+.highlight {
+  border-left: 4px solid var(--code-border);
+  border-radius: 4px;
+  margin: 1.5em 0;
+}
+
+/* Dark Mode - fundo escuro */
+[data-md-color-scheme="slate"] .highlight {
+  background-color: #2b2b2b !important;
+}
+
+/* Light Mode - fundo claro */
+[data-md-color-scheme="default"] .highlight {
+  background-color: #f5f5f5 !important;
+}
+
+/* Rust code específico */
+.highlight .language-rust {
+  border-left-color: var(--rust-orange);
+  border-left-width: 5px;
+}
+
+/* === Inline Code === */
+/* Dark Mode */
+[data-md-color-scheme="slate"] code {
+  background-color: rgba(206, 66, 43, 0.2) !important;
+  color: var(--rust-light) !important;
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+  font-size: 0.92em;
+  font-weight: 600;
+}
+
+/* Light Mode */
+[data-md-color-scheme="default"] code {
+  background-color: rgba(206, 66, 43, 0.1) !important;
+  color: var(--rust-dark) !important;
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+  font-size: 0.92em;
+  font-weight: 600;
+}
+
+/* === Copy Button Customization === */
+.md-clipboard {
+  color: var(--rust-orange) !important;
+}
+
+.md-clipboard:hover {
+  color: var(--rust-light) !important;
+}
+
+/* === Links === */
+a {
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+/* Links no conteúdo - cor Rust */
+.md-content a,
+.md-typeset a,
+article a {
+  color: var(--rust-dark) !important;
+}
+
+[data-md-color-scheme="slate"] .md-content a,
+[data-md-color-scheme="slate"] .md-typeset a,
+[data-md-color-scheme="slate"] article a {
+  color: var(--rust-light) !important;
+}
+
+/* Hover nos links do conteúdo */
+.md-content a:hover,
+.md-typeset a:hover {
+  color: var(--rust-orange) !important;
+  text-decoration: underline;
+}
+
+/* Links nas tabs/header - hover branco */
+.md-tabs a:hover,
+.md-header a:hover {
+  color: white !important;
+  text-decoration: none;
+  opacity: 0.9;
+}
+
+/* REMOVER ROXO de links visitados */
+a:visited,
+.md-content a:visited,
+.md-typeset a:visited,
+article a:visited {
+  color: var(--rust-dark) !important;
+}
+
+[data-md-color-scheme="slate"] a:visited,
+[data-md-color-scheme="slate"] .md-content a:visited,
+[data-md-color-scheme="slate"] .md-typeset a:visited,
+[data-md-color-scheme="slate"] article a:visited {
+  color: var(--rust-light) !important;
+}
+
+/* Links na navegação lateral */
+.md-nav__link {
+  color: inherit;
+  transition: color 0.2s ease;
+}
+
+.md-nav__link:hover {
+  color: var(--rust-orange) !important;
+}
+
+/* Garantir que links visitados na navegação não mudem */
+.md-nav a:visited,
+.md-tabs a:visited {
+  color: currentColor !important;
+}
+
+/* === Admonitions (Callouts) === */
+.admonition {
+  border-left: 4px solid;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 1.5em 0;
+}
+
+/* Rust-specific admonition */
+.admonition.rust {
+  border-color: var(--rust-orange);
+}
+
+.admonition.rust>.admonition-title {
+  background-color: rgba(206, 66, 43, 0.1);
+  border-color: var(--rust-orange);
+}
+
+.admonition.rust>.admonition-title::before {
+  content: "🦀";
+  margin-right: 0.5em;
+}
+
+/* === Table of Contents (Right Sidebar) === */
+.md-sidebar--secondary {
+  border-left: 1px solid rgba(206, 66, 43, 0.2);
+}
+
+.md-nav__link--active {
+  color: var(--rust-orange) !important;
+  font-weight: 700;
+}
+
+/* === Tables === */
+table {
+  border-collapse: collapse;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+thead {
+  background: linear-gradient(135deg, var(--rust-dark) 0%, var(--rust-orange) 100%);
+  color: white;
+}
+
+thead th {
+  padding: 12px 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.85em;
+  letter-spacing: 0.5px;
+}
+
+tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+tbody tr:hover {
+  background-color: rgba(206, 66, 43, 0.05);
+}
+
+tbody td {
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(206, 66, 43, 0.1);
+}
+
+/* === Blockquotes === */
+blockquote {
+  border-left: 4px solid var(--rust-orange);
+  background-color: rgba(206, 66, 43, 0.05);
+  padding: 1em 1.5em;
+  margin: 1.5em 0;
+  border-radius: 4px;
+  font-style: italic;
+}
+
+/* === Horizontal Rules === */
+hr {
+  border: none;
+  height: 2px;
+  background: linear-gradient(to right, transparent, var(--rust-orange), transparent);
+  margin: 2em 0;
+}
+
+/* === Search Bar === */
+.md-search__input {
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.md-search__input:focus {
+  border-color: var(--rust-orange);
+}
+
+/* === Scrollbar Customization === */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--rust-orange);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--rust-dark);
+}
+
+/* === Version Badge === */
+.md-version__current {
+  background-color: var(--rust-orange) !important;
+  color: white !important;
+}
+
+/* === Footer === */
+.md-footer {
+  background: linear-gradient(135deg, var(--rust-dark) 0%, var(--rust-orange) 100%);
+}
+
+/* === Badges (para usar inline) === */
+.badge {
+  display: inline-block;
+  padding: 0.25em 0.6em;
+  font-size: 0.85em;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: 3px;
+  margin: 0 0.2em;
+}
+
+.badge-rust {
+  background-color: var(--rust-orange);
+  color: white;
+}
+
+.badge-version {
+  background-color: #555;
+  color: white;
+}
+
+.badge-new {
+  background-color: #28a745;
+  color: white;
+}
+
+/* === Custom Emoji Sizing === */
+.twemoji {
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: middle;
+}
+
+/* === Keyboard Keys === */
+kbd {
+  background-color: #f7f7f7;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), 0 0 0 2px #fff inset;
+  color: #333;
+  display: inline-block;
+  font-family: monospace;
+  font-size: 0.85em;
+  line-height: 1.4;
+  margin: 0 0.1em;
+  padding: 0.1em 0.6em;
+  text-shadow: 0 1px 0 #fff;
+}
+
+/* === Tabs (Tabbed Content) === */
+.tabbed-set {
+  margin: 1.5em 0;
+}
+
+.tabbed-set>input:checked+label {
+  border-bottom: 3px solid var(--rust-orange);
+  font-weight: 700;
+}
+
+/* === Task Lists === */
+.task-list-item input[type="checkbox"]:checked+* {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+/* === Animations === */
+@keyframes rust-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 5px var(--rust-orange);
+  }
+
+  50% {
+    box-shadow: 0 0 20px var(--rust-light);
+  }
+}
+
+.highlight:hover {
+  animation: rust-glow 2s ease-in-out;
+}
+
+/* === Mobile Responsiveness === */
+@media screen and (max-width: 768px) {
+  .md-header__title {
+    font-size: 0.9em;
+  }
+
+  code {
+    font-size: 0.85em;
+  }
+}
+
+/* === Print Styles === */
+@media print {
+
+  .md-header,
+  .md-tabs,
+  .md-sidebar,
+  .md-footer {
+    display: none;
+  }
+
+  .md-content {
+    max-width: 100%;
+  }
+}
