@@ -61,6 +61,7 @@ nav:
       - Error Handling: concepts/error-handling.md
       - File Operations: concepts/file-operations.md
       - Type Safety: concepts/type-safety.md
+      - Advanced Error Handling: concepts/advanced-error-handling.md
 
   - Intermediate:
       - v0.6 - Visual Interface: intermediate/v0.6.0-visual-interface-colors.md
@@ -76,6 +77,7 @@ nav:
       - v1.4 - Tags System: advanced/v1.4.0-tags-system.md
       - v1.5 - Due Dates Tabular: advanced/v1.5.0-due-dates-tabular.md
       - v1.6 - Professional CLI Clap: advanced/v1.6.0-professional-cli-clap.md
+      - v1.7 - Professional Error Handling: advanced/v1.7.0-professional-error-handling.md
 
   - Changelog: CHANGELOG.md
 

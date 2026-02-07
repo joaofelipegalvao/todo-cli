@@ -1,8 +1,8 @@
-# 🦀 Todo CLI Learning Wiki
+# 🦀 Todo CLI Learning Docs
 
 > Complete learning journey from basic CLI to professional task manager
 
-This wiki contains the complete documentation of how the todo-cli project evolved, version by version. Each version represents a learning milestone with detailed explanations of concepts, design decisions, and implementation details.
+This docs contains the complete documentation of how the todo-cli project evolved, version by version. Each version represents a learning milestone with detailed explanations of concepts, design decisions, and implementation details.
 
 ## Navigation
 
@@ -38,46 +38,19 @@ For experienced developers:
 - [v1.4.0 - Tags System](advanced/v1.4.0-tags-system.md) - Add categorization with tags
 - [v1.5.0 - Due Dates + Tabular Display](advanced/v1.5.0-due-dates-tabular.md) - Deadline tracking with chrono
 - [v1.6.0 - Professional CLI with Clap](advanced/v1.6.0-professional-cli-clap.md) - Industry-standard CLI framework
+- [v1.7.0 - Professional Error Handling](advanced/v1.7.0-professional-error-handling.md) - ⭐ **NEW:** anyhow + thiserror
 
 ### Cross-Cutting Concepts
 
 Key patterns and best practices used throughout the project:
 
 - [Error Handling](concepts/error-handling.md) - From basic `?` to professional error messages
+- [Advanced Error Handling](concepts/advanced-error-handling.md) - ⭐ **NEW:** Deep dive into anyhow + thiserror
 - [File Operations](concepts/file-operations.md) - File I/O patterns and JSON serialization
 - [CLI Design](concepts/cli-design.md) - Command-line interface patterns and user experience
 - [Type Safety](concepts/type-safety.md) - Using Rust's type system to prevent bugs
 
-## Learning Path
-
-### Phase 1: Fundamentals (v0.1.0 - v0.5.0)
-
-**Focus:** Make it work
-
-- Basic Rust syntax and ownership
-- File I/O operations
-- String manipulation
-- Error handling with `?`
-- Pattern matching
-
-### Phase 2: Polish (v0.6.0 - v1.1.0)
-
-**Focus:** Make it nice
-
-- Visual design with colors
-- User experience patterns
-- Code organization (DRY)
-- Helper functions
-- Advanced filtering
-
-### Phase 3: Architecture (v1.2.0 - v1.6.0)
-
-**Focus:** Make it right
-
-- Type-safe design with structs/enums
-- Professional CLI patterns
-- Automatic serialization
-- Industry-standard frameworks
+---
 
 ## Project Evolution
 
@@ -93,43 +66,10 @@ v1.4: Extensible with tags (1 line = new feature)
 v1.5: Due dates + tabular display (deadline tracking + professional UX)
    ↓
 v1.6: Clap + ValueEnum (zero manual parsing, compile-time safety)
+   ↓
+v1.7: anyhow + thiserror (professional error handling) ⭐ NEW
+
 ```
-
-## Key Achievements
-
-### Code Quality
-
-- **36% reduction** in total lines after struct refactoring
-- **91% reduction** in I/O code after JSON migration
-- **Zero manual parsing** after adopting clap
-- **Type safety** from command line to storage
-
-### Features
-
-- ✅ Complete CRUD operations
-- ✅ Priority system with visual indicators
-- ✅ Advanced filters and search
-- ✅ Tags for categorization
-- ✅ Due dates with deadline tracking
-- ✅ Professional CLI with auto-help
-- ✅ Type-safe architecture throughout
-
-### Learning Outcomes
-
-1. **Rust fundamentals** through practical application
-2. **CLI design patterns** that feel natural to users
-3. **Type safety** - using compiler to prevent bugs
-4. **Refactoring strategy** - evolve code without breaking it
-5. **Professional development** - industry-standard patterns
-
-## Technical Stack
-
-- **Language:** Rust 🦀
-- **CLI Framework:** Clap (v1.6.0+)
-- **Serialization:** Serde + JSON
-- **Colors:** Colored crate
-- **Dates:** Chrono
-- **File Format:** JSON (v1.3.0+)
 
 ## Version Summary
 
@@ -151,10 +91,106 @@ v1.6: Clap + ValueEnum (zero manual parsing, compile-time safety)
 | v1.4.0 | Tags System | `Vec<String>`, `.retain()`, bug fixes | ~120 |
 | v1.5.0 | Due Dates | `chrono`, date arithmetic, tabular display | ~150 |
 | v1.6.0 | Professional CLI | Clap, `ValueEnum`, zero manual parsing | ~80 |
+| v1.7.0 | Error Handling | `anyhow`, `thiserror`, error chains | ~85 | ⭐
+
+---
+
+## Learning Path
+
+### Path 1: Complete Beginner (0.1 → 1.1)
+
+Start here if you're new to Rust:
+
+1. **Basics (v0.1-v0.5)** - Syntax, ownership, error handling
+2. **Visual Polish (v0.6-v0.7)** - Crates, user experience
+3. **Advanced Features (v0.8-v1.1)** - Enums, Options, patterns
+
+**Time:** 2-3 weeks  
+**Outcome:** Comfortable with Rust fundamentals
+
+### Path 2: Architecture Focus (1.2 → 1.7)
+
+For those wanting to learn professional Rust patterns:
+
+1. **Type Safety (v1.2)** - Structs and enums
+2. **Serialization (v1.3)** - Serde patterns
+3. **CLI Frameworks (v1.6)** - Clap derive macros
+4. **Error Handling (v1.7)** - anyhow + thiserror ⭐
+
+**Time:** 1-2 weeks  
+**Outcome:** Production-ready Rust architecture
+
+### Path 3: Error Handling Deep Dive (NEW)
+
+Focus on professional error management:
+
+1. **Basic errors (v0.1-v0.4)** - `?` operator, validation
+2. **Generic errors (v1.2-v1.6)** - `Box<dyn Error>`
+3. **Professional errors (v1.7)** - anyhow + thiserror ⭐
+4. **Concepts** - [Advanced Error Handling](concepts/advanced-error-handling.md)
+
+**Time:** 3-4 days  
+**Outcome:** Master Rust error handling
+
+---
+
+## Key Achievements
+
+### Code Quality
+
+- **36% reduction** in total lines after struct refactoring
+- **91% reduction** in I/O code after JSON migration
+- **Zero manual parsing** after adopting clap
+- **Type safety** from command line to storage
+- **Professional error handling** with context chains (v1.7.0) ⭐
+
+### Features
+
+- ✅ Complete CRUD operations
+- ✅ Priority system with visual indicators
+- ✅ Advanced filters and search
+- ✅ Tags for categorization
+- ✅ Due dates with deadline tracking
+- ✅ Professional CLI with auto-help
+- ✅ Type-safe architecture throughout
+- ✅ Rich error messages with context ⭐ NEW
+
+### Learning Outcomes
+
+1. **Rust fundamentals** through practical application
+2. **CLI design patterns** that feel natural to users
+3. **Type safety** - using compiler to prevent bugs
+4. **Refactoring strategy** - evolve code without breaking it
+5. **Professional development** - industry-standard patterns
+
+---
+
+## Technical Stack
+
+- **Language:** Rust 🦀
+- **CLI Framework:** Clap (v1.6.0+)
+- **Serialization:** Serde + JSON
+- **Colors:** Colored crate
+- **Dates:** Chrono
+- **File Format:** JSON (v1.3.0+)
+
+---
+
+## Potential Future Versions
+
+- **v1.8:** Subtasks/nested tasks with recursive data structures
+- **v1.9:** Multiple projects/contexts
+- **v2.0:** TUI with `ratatui`
+- **v2.1:** Configuration file with `config` crate
+- **v2.2:** Shell completions (bash, zsh, fish)
+- **v2.3:** Export/import (CSV, JSON, Markdown)
+- **v2.4:** Sync with cloud storage
+- **v2.5:** Web API with `axum`
+- **v3.0:** Plugin system
+
+---
 
 ## For Students
-
-### How to Use This Wiki
 
 1. **Read chronologically** - Start with v0.1.0 and progress through versions
 2. **Study the code** - Each version links to the exact commit
@@ -163,8 +199,6 @@ v1.6: Clap + ValueEnum (zero manual parsing, compile-time safety)
 5. **Compare approaches** - See how code evolved from strings to structs
 
 ### Learning Goals
-
-After studying this wiki, you should understand:
 
 - **Rust fundamentals**: Ownership, borrowing, lifetimes, error handling
 - **CLI design**: Subcommands, flags, help generation, user experience
@@ -185,19 +219,6 @@ After studying this wiki, you should understand:
 
 The CLI is now production-ready and serves as an excellent foundation for learning more advanced Rust concepts:
 
-### Potential Future Versions
-
-- **v1.7:** Recurring tasks with chrono patterns
-- **v1.8:** Subtasks/nested tasks with recursive data structures
-- **v1.9:** Multiple projects/contexts
-- **v2.0:** TUI with `ratatui`
-- **v2.1:** Configuration file with `config` crate
-- **v2.2:** Shell completions (bash, zsh, fish)
-- **v2.3:** Export/import (CSV, JSON, Markdown)
-- **v2.4:** Sync with cloud storage
-- **v2.5:** Web API with `axum`
-- **v3.0:** Plugin system
-
 ### Learning Extensions
 
 Each future version would teach new Rust concepts while building on the solid foundation established here.
@@ -207,4 +228,3 @@ Each future version would teach new Rust concepts while building on the solid fo
 **The beauty of this architecture:** All new features benefit from the type-safe, extensible foundation built through careful refactoring.
 
 **🦀 Happy learning!**
-

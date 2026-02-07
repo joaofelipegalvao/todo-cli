@@ -243,3 +243,4 @@ fn test_invalid_task_number() {
 - [File Operations](file-operations.md) - File-related error handling
 - [CLI Design](cli-design.md) - Command-line interface patterns
 - [Type Safety](type-safety.md) - Using types to prevent errors
+

@@ -1,19 +1,45 @@
-use std::{
-    error::Error,
-    fs,
-    process::{self},
-};
+use std::{fs, process};
 
+use anyhow::{Context, Result};
 use chrono::{Local, NaiveDate};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use colored::{ColoredString, Colorize};
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum TodoError {
+    #[error("Task ID {id} is invalid (valid range: 1-{max})")]
+    InvalidTaskId { id: usize, max: usize },
+
+    #[error("Task #{id} is already marked as {status}")]
+    TaskAlreadyInStatus { id: usize, status: String },
+
+    #[error("Tag '{0}' not found in any task")]
+    TagNotFound(String),
+
+    #[error("No tasks found matching the specified filters")]
+    NoTasksFound,
+
+    #[error("No tags found in any task")]
+    NoTagsFound,
+
+    #[error("Search returned no results for query: '{0}'")]
+    NoSearchResults(String),
+}
 
 fn main() {
     let cli = Cli::parse();
 
     if let Err(e) = run(cli) {
-        eprintln!("Erro: {}", e);
+        eprintln!("{} {}", "Error:".red().bold(), format!("{}", e).red());
+
+        let mut source = e.source();
+        while let Some(cause) = source {
+            eprintln!("{} {}", "Caused by:".red(), cause);
+            source = cause.source();
+        }
+
         process::exit(1);
     }
 }
@@ -293,19 +319,31 @@ impl Priority {
     }
 }
 
-fn load_tasks() -> Result<Vec<Task>, Box<dyn Error>> {
+fn load_tasks() -> Result<Vec<Task>> {
     match fs::read_to_string("todos.json") {
-        Ok(content) => {
-            let tasks: Vec<Task> = serde_json::from_str(&content)?;
-            Ok(tasks)
-        }
-        Err(_) => Ok(Vec::new()),
+        Ok(content) => serde_json::from_str(&content)
+            .context("Failed to parse todos.json - file may be corrupted"),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(Vec::new()),
+        Err(e) => Err(e).context(format!(
+            "Failed to read todos.json from current directory: {}",
+            std::env::current_dir().unwrap_or_default().display()
+        )),
     }
 }
 
-fn save_tasks(tasks: &[Task]) -> Result<(), Box<dyn Error>> {
-    let json = serde_json::to_string_pretty(tasks)?;
-    fs::write("todos.json", json)?;
+fn save_tasks(tasks: &[Task]) -> Result<()> {
+    let json = serde_json::to_string_pretty(tasks).context("Failed to serialize tasks to JSON")?;
+
+    fs::write("todos.json", json)
+        .context("Failed to write to todos.json - check file permissions")?;
+
+    Ok(())
+}
+
+fn validate_task_id(id: usize, max: usize) -> Result<(), TodoError> {
+    if id == 0 || id > max {
+        return Err(TodoError::InvalidTaskId { id, max });
+    }
     Ok(())
 }
 
@@ -336,41 +374,30 @@ fn calculate_column_widths(tasks: &[(usize, &Task)]) -> (usize, usize, usize) {
 }
 
 fn get_due_text(task: &Task) -> String {
-    if let Some(due) = task.due_date {
-        let today = Local::now().naive_local().date();
-        let days_until = (due - today).num_days();
+    let Some(due) = task.due_date else {
+        return String::new();
+    };
 
-        if task.completed {
-            String::new()
-        } else if days_until < 0 {
-            format!(
-                "late {} day{}",
-                -days_until,
-                if -days_until == 1 { "" } else { "s" }
-            )
-        } else if days_until == 0 {
-            "due today".to_string()
-        } else if days_until <= 7 {
-            format!(
-                "in {} day{}",
-                days_until,
-                if days_until == 1 { "" } else { "s" }
-            )
-        } else {
-            format!(
-                "in {} day{}",
-                days_until,
-                if days_until == 1 { "" } else { "s" }
-            )
+    let today = Local::now().naive_local().date();
+    let days = (due - today).num_days();
+
+    match days {
+        d if d < 0 => {
+            let abs_d = d.abs();
+            format!("late {} day{}", abs_d, if abs_d == 1 { "" } else { "s" })
         }
-    } else {
-        String::new()
+        0 => "due today".to_string(),
+        d => format!("in {} day{}", d, if d == 1 { "" } else { "s" }),
     }
 }
 
 fn get_due_colored(task: &Task, text: &str) -> ColoredString {
     if text.is_empty() {
         return "".normal();
+    }
+
+    if task.completed {
+        return text.dimmed();
     }
 
     if let Some(due) = task.due_date {
@@ -403,7 +430,7 @@ fn display_task_tabular(number: usize, task: &Task, task_width: usize, tags_widt
     let task_text = if task.text.len() > task_width {
         format!("{}...", &task.text[..task_width - 3])
     } else {
-        task.text.clone()
+        task.text.to_owned()
     };
 
     let tags_str = if task.tags.is_empty() {
@@ -439,11 +466,6 @@ fn display_task_tabular(number: usize, task: &Task, task_width: usize, tags_widt
 
 fn display_lists(tasks: &[(usize, &Task)], title: &str) {
     println!("\n{}:\n", title);
-
-    if tasks.is_empty() {
-        println!("No tasks");
-        return;
-    }
 
     let (task_width, tags_width, due_width) = calculate_column_widths(tasks);
 
@@ -490,7 +512,7 @@ fn display_lists(tasks: &[(usize, &Task)], title: &str) {
     println!();
 }
 
-fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
+fn run(cli: Cli) -> Result<()> {
     match cli.command {
         Commands::Add(args) => {
             let task = Task::new(args.text, args.priority, args.tag, args.due);
@@ -509,18 +531,12 @@ fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
         } => {
             let all_tasks = load_tasks()?;
 
-            if all_tasks.is_empty() {
-                println!("No tasks");
-                return Ok(());
-            }
-
             let mut indexed_tasks: Vec<(usize, &Task)> = all_tasks
                 .iter()
                 .enumerate()
                 .map(|(i, task)| (i + 1, task))
                 .collect();
 
-            // Apply filters
             indexed_tasks.retain(|(_, t)| t.matches_status(status));
 
             if let Some(pri) = priority {
@@ -532,15 +548,18 @@ fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
             }
 
             if let Some(tag_name) = &tag {
+                let count_before = indexed_tasks.len();
                 indexed_tasks.retain(|(_, t)| t.tags.contains(tag_name));
+
+                if indexed_tasks.is_empty() && count_before > 0 {
+                    return Err(TodoError::TagNotFound(tag_name.to_owned()).into());
+                }
             }
 
             if indexed_tasks.is_empty() {
-                println!("No tasks found with these filters");
-                return Ok(());
+                return Err(TodoError::NoTasksFound.into());
             }
 
-            // Apply sorting
             if let Some(sort_by) = sort {
                 match sort_by {
                     SortBy::Priority => {
@@ -561,7 +580,6 @@ fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
                 }
             }
 
-            // Determine title
             let title = match (status, priority, due) {
                 (StatusFilter::Pending, Some(Priority::High), None) => {
                     "High priority pending tasks"
@@ -589,15 +607,15 @@ fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
 
         Commands::Done { id } => {
             let mut tasks = load_tasks()?;
-
-            if id == 0 || id > tasks.len() {
-                return Err("Invalid task number".into());
-            }
-
+            validate_task_id(id, tasks.len())?;
             let index = id - 1;
 
             if tasks[index].completed {
-                return Err("Task is already marked as completed".into());
+                return Err(TodoError::TaskAlreadyInStatus {
+                    id,
+                    status: "completed".to_owned(),
+                }
+                .into());
             }
 
             tasks[index].mark_done();
@@ -607,15 +625,15 @@ fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
 
         Commands::Undone { id } => {
             let mut tasks = load_tasks()?;
-
-            if id == 0 || id > tasks.len() {
-                return Err("Invalid task number".into());
-            }
-
+            validate_task_id(id, tasks.len())?;
             let index = id - 1;
 
             if !tasks[index].completed {
-                return Err("Task is already unmarked".into());
+                return Err(TodoError::TaskAlreadyInStatus {
+                    id,
+                    status: "pending".to_owned(),
+                }
+                .into());
             }
 
             tasks[index].mark_undone();
@@ -625,15 +643,12 @@ fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
 
         Commands::Remove { id } => {
             let mut tasks = load_tasks()?;
-
-            if id == 0 || id > tasks.len() {
-                return Err("This task doesn't exist or was already removed".into());
-            }
+            validate_task_id(id, tasks.len())?;
 
             let index = id - 1;
-            tasks.remove(index);
+            let removed_task = tasks.remove(index);
             save_tasks(&tasks)?;
-            println!("{}", "✓ Task removed".red());
+            println!("{} {}", "✓ Task removed:".red(), removed_task.text.dimmed());
         }
 
         Commands::Clear => {
@@ -648,11 +663,6 @@ fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
         Commands::Search { query, tag } => {
             let tasks = load_tasks()?;
 
-            if tasks.is_empty() {
-                println!("No tasks");
-                return Ok(());
-            }
-
             let mut results: Vec<(usize, &Task)> = tasks
                 .iter()
                 .enumerate()
@@ -665,7 +675,7 @@ fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
             }
 
             if results.is_empty() {
-                println!("No results for '{}'", query);
+                return Err(TodoError::NoSearchResults(query).into());
             } else {
                 display_lists(&results, &format!("Search results for \"{}\"", query));
             }
@@ -674,23 +684,17 @@ fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
         Commands::Tags => {
             let tasks = load_tasks()?;
 
-            if tasks.is_empty() {
-                println!("No tasks");
-                return Ok(());
-            }
-
             let mut all_tags: Vec<String> = Vec::new();
             for task in &tasks {
                 for tag in &task.tags {
                     if !all_tags.contains(tag) {
-                        all_tags.push(tag.clone());
+                        all_tags.push(tag.to_owned());
                     }
                 }
             }
 
             if all_tags.is_empty() {
-                println!("No tags found");
-                return Ok(());
+                return Err(TodoError::NoTagsFound.into());
             }
 
             all_tags.sort();

@@ -17,6 +17,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unit tests
 - TUI (Terminal User Interface)
 
+## [1.7.0] - 2026-02-07
+
+### Added
+
+- **Professional error handling** using `anyhow` and `thiserror` crates
+- `TodoError` enum for domain-specific errors with rich data
+- Custom error variants:
+  - `InvalidTaskId { id, max }` - Shows valid range in error message
+  - `TaskAlreadyInStatus { id, status }` - Prevents duplicate state changes
+  - `TagNotFound(String)` - Clear message when filtering by non-existent tag
+  - `NoTasksFound` - Better UX when filters return empty results
+  - `NoTagsFound` - Informative message when no tags exist
+  - `NoSearchResults(String)` - Shows search query in error message
+- `validate_task_id()` helper function for centralized ID validation
+- Error chain display in `main()` - Shows full "Caused by:" chain
+- Rich context with `.context()` on all operations
+- Specific error messages for each failure mode
+- Pattern matching on `std::io::ErrorKind` for granular error handling
+
+### Changed
+
+- **BREAKING CHANGE:** Error type migrated from `Box<dyn Error>` to `anyhow::Result`
+- All function signatures updated to use `Result<T>` (shorthand for `Result<T, anyhow::Error>`)
+- `load_tasks()`: Added context for parse failures and read errors
+- `save_tasks()`: Added context for serialization and write failures
+- `done` command: Added validation for already-completed tasks
+- `undone` command: Added validation for already-pending tasks
+- `remove` command: Uses centralized `validate_task_id()`
+- `list` command: Returns `TodoError::NoTasksFound` instead of printing
+- `search` command: Returns `TodoError::NoSearchResults` instead of printing
+- `tags` command: Returns `TodoError::NoTagsFound` instead of printing
+- Error display: Shows colored "Error:" prefix and "Caused by:" chain
+- `main()`: Enhanced error display with full error chain traversal
+
+### Fixed
+
+- Clippy warning in `get_due_text()` - Removed redundant `else if` block
+- Generic error messages replaced with specific, actionable messages
+- Lost error context - Now displays full error chain
+- User confusion about error causes - Shows root cause with "Caused by:"
+- Missing context in file operations - All I/O now includes file path context
+- State validation gaps - All state transitions now validated
+
 ### Changed
 
 - Migrated project documentation to MkDocs
@@ -522,7 +565,8 @@ Users need to migrate from `todos.txt` to `todos.json`:
 - Pattern matching for subcommands
 - Error handling with `?` operator
 
-[Unreleased]: https://github.com/joaofelipegalvao/todo-cli/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/joaofelipegalvao/todo-cli/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/joaofelipegalvao/todo-cli/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/joaofelipegalvao/todo-cli/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/joaofelipegalvao/todo-cli/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/joaofelipegalvao/todo-cli/compare/v1.3.0...v1.4.0
