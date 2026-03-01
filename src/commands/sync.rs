@@ -9,7 +9,7 @@
 //! | `pull` | Pull from remote and merge (Phase 2) |
 //! | `status` | Show sync state |
 
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
 use colored::Colorize;
 
 use crate::storage::{Storage, get_data_file_path};
@@ -88,6 +88,7 @@ fn push(storage: &impl Storage) -> Result<()> {
 
     let current_tasks = storage.load()?;
     let message = build_commit_message(&current_tasks, &data_dir);
+    git::commit(&data_dir, &message)?;
 
     let committed = git::commit(&data_dir, &message)?;
 
@@ -180,7 +181,7 @@ fn build_commit_message(current: &[crate::models::Task], data_dir: &std::path::P
 
 // ── pull ─────────────────────────────────────────────────────────────────────
 
-fn pull(_storage: &impl Storage) -> Result<()> {
+fn pull(storage: &impl Storage) -> Result<()> {
     git::check_git_available()?;
     let _cfg = config::require()?;
 
@@ -193,20 +194,52 @@ fn pull(_storage: &impl Storage) -> Result<()> {
         bail!("Git repository not initialized. Run: todo sync init <remote>");
     }
 
+    // 1. Snapshot local state before pull
+    let local_tasks = storage.load()?;
+
+    // 2. Commit any pending local changes before rebase
+    let message = build_commit_message(&local_tasks, &data_dir);
+    git::commit(&data_dir, &message)?;
+
+    // 3. Pull from remote
     println!("{}", "Pulling from remote…".dimmed());
     let output = git::pull(&data_dir)?;
-
     if !output.is_empty() {
         println!("{}", output.dimmed());
     }
 
-    // Phase 2: semantic merge will be implemented here.
-    // For now, git pull --rebase handles conflicts at the file level.
+    // 4. Read remote state from todos.json after pull
+    let remote_json = std::fs::read_to_string(data_dir.join("todos.json"))
+        .context("Failed to read todos.json after pull")?;
+    let remote_tasks: Vec<crate::models::Task> =
+        serde_json::from_str(&remote_json).context("Failed to parse todos.json after pull")?;
+
+    // 5. Semantic merge
+    let result = crate::sync::merge::merge(local_tasks, remote_tasks);
+
+    // 6. Save merged result
+    storage.save(&result.tasks)?;
+
     println!("{} Pull complete", "✓".green());
-    println!(
-        "{}  Semantic merge (UUID-based) coming in Phase 2.",
-        "→".dimmed()
-    );
+
+    if result.added > 0 || result.updated > 0 {
+        if result.added > 0 {
+            println!(
+                "  {} {} task(s) added from remote",
+                "↓".cyan(),
+                result.added
+            );
+        }
+        if result.updated > 0 {
+            println!(
+                "  {} {} task(s) updated (remote was newer)",
+                "↺".cyan(),
+                result.updated
+            );
+        }
+    } else {
+        println!("  {} Already up to date", "".blue());
+    }
 
     Ok(())
 }
