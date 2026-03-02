@@ -29,6 +29,9 @@ pub struct SyncConfig {
 
 /// Returns the path to `sync.toml` in the rustodo data directory.
 pub fn config_path() -> Result<PathBuf> {
+    if let Ok(dir) = std::env::var("RUSTODO_DATA_DIR") {
+        return Ok(PathBuf::from(dir).join("sync.toml"));
+    }
     let dirs =
         ProjectDirs::from("", "", "rustodo").context("Failed to determine project directories")?;
     Ok(dirs.data_dir().join("sync.toml"))

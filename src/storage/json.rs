@@ -136,6 +136,16 @@ impl Storage for JsonStorage {
 
 /// Returns the path to the todos.json file (re-exported for compatibility)
 pub fn get_data_file_path() -> Result<PathBuf> {
+    // Allow overriding the data directory via environment variable
+    if let Ok(dir) = std::env::var("RUSTODO_DATA_DIR") {
+        let data_dir = PathBuf::from(dir);
+        fs::create_dir_all(&data_dir).context(format!(
+            "Failed to create data directory: {}",
+            data_dir.display()
+        ))?;
+        return Ok(data_dir.join("todos.json"));
+    }
+
     let project_dirs =
         ProjectDirs::from("", "", "rustodo").context("Failed to determine project directories")?;
 

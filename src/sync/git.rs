@@ -101,10 +101,15 @@ pub fn initial_commit(dir: &Path) -> Result<()> {
     if !todos_path.exists() {
         std::fs::write(&todos_path, "[]\n").context("Failed to create todos.json")?;
     }
+
+    let gitignore = dir.join(".gitignore");
+    if gitignore.exists() {
+        git(dir, &["add", ".gitignore"])?;
+    }
     git(dir, &["add", "todos.json"])?;
 
     // Check if there is anything staged
-    let status = git(dir, &["status", "--porcelain", "todos.json"])?;
+    let status = git(dir, &["status", "--porcelain"])?;
     if status.is_empty() {
         return Ok(());
     }
@@ -170,11 +175,49 @@ pub fn push(dir: &Path) -> Result<()> {
     Ok(())
 }
 
-/// Pulls from `origin` using rebase to keep history linear.
-///
+pub enum PullResult {
+    Ok(String),
+    Conflict,
+}
+
 /// Returns the raw git output for the caller to display.
-pub fn pull(dir: &Path) -> Result<String> {
-    git(dir, &["pull", "--rebase", "origin", "HEAD"]).context("Failed to pull from remote")
+pub fn pull(dir: &Path) -> Result<PullResult> {
+    let result = git(
+        dir,
+        &[
+            "pull",
+            "--no-rebase",
+            "--allow-unrelated-histories",
+            "origin",
+            "HEAD",
+        ],
+    );
+
+    match result {
+        Ok(output) => Ok(PullResult::Ok(output)),
+        Err(_) => {
+            let status = git(dir, &["status", "--porcelain"])?;
+            if status.contains("todos.json") {
+                Ok(PullResult::Conflict)
+            } else {
+                Err(anyhow::anyhow!("Pull failed for unknown reason"))
+            }
+        }
+    }
+}
+
+pub fn read_ours(dir: &Path) -> Result<String> {
+    git(dir, &["show", ":2:todos.json"]).context("Failed to read local version of todos.json")
+}
+
+pub fn read_theirs(dir: &Path) -> Result<String> {
+    git(dir, &["show", ":3:todos.json"]).context("Failed to read remote version of todos.json")
+}
+
+pub fn finish_merge(dir: &Path) -> Result<()> {
+    git(dir, &["add", "todos.json"])?;
+    git(dir, &["commit", "--no-edit"])?;
+    Ok(())
 }
 
 /// Returns a short status summary.
