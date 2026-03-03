@@ -1,6 +1,6 @@
 [package]
 name = "rustodo"
-version = "2.17.1"
+version = "2.17.2"
 edition = "2024"
 authors = ["João Felipe Galvão <github.com/joaofelipegalvao>"]
 description = "A modern, powerful task manager built with Rust"
