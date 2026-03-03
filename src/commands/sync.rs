@@ -203,20 +203,20 @@ fn pull(storage: &impl Storage) -> Result<()> {
     println!("{}", "Pulling from remote…".dimmed());
 
     match git::pull(&data_dir)? {
-        git::PullResult::Ok(output) => {
-            if !output.is_empty() {
-                println!("{}", output.dimmed());
-            }
-            // 4. Read remote state from todos.json after pull
-            let remote_json = std::fs::read_to_string(data_dir.join("todos.json"))
-                .context("Failed to read todos.json after pull")?;
-            let remote_tasks: Vec<crate::models::Task> = serde_json::from_str(&remote_json)
-                .context("Failed to parse todos.json after pull")?;
+        git::PullResult::UpToDate => {
+            println!("  {} Already up to date", "".blue());
+        }
 
-            // 5. Semantic merge
+        // remote_json capturado antes do git merge — lista limpa, sem concatenação
+        git::PullResult::Merged(remote_json) => {
+            // 4. Parse do estado puro do remote
+            let remote_tasks: Vec<crate::models::Task> =
+                serde_json::from_str(&remote_json).context("Failed to parse remote todos.json")?;
+
+            // 5. Semantic merge: local vs remote (ambos limpos)
             let result = crate::sync::merge::merge(local_tasks, remote_tasks);
 
-            // 6. Save merged result
+            // 6. Salva e commita
             storage.save(&result.tasks)?;
             git::commit(&data_dir, "sync: merge")?;
 
@@ -259,9 +259,6 @@ fn print_merge_result(result: &crate::sync::merge::MergeResult) {
             "↺".cyan(),
             result.updated
         );
-    }
-    if result.added == 0 && result.updated == 0 {
-        println!("  {} Already up to date", "".blue());
     }
 }
 

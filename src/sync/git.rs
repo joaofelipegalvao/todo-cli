@@ -17,7 +17,7 @@
 //! ```text
 //! todo sync init <remote>  →  git init + git remote add origin + initial commit
 //! todo sync push           →  git add todos.json + git commit -m "..." + git push
-//! todo sync pull           →  git pull --rebase origin main
+//! todo sync pull           →  git fetch + semantic merge + git rebase FETCH_HEAD
 //! todo sync status         →  git status + git log summary
 //! ```
 
@@ -168,39 +168,63 @@ pub fn ahead_behind(dir: &Path) -> (usize, usize) {
 
 /// Pushes the current branch to `origin`.
 pub fn push(dir: &Path) -> Result<()> {
-    // Try pushing; if upstream is not set, set it automatically
-    git(dir, &["push", "origin", "HEAD"])
-        .or_else(|_| git(dir, &["push", "--set-upstream", "origin", "HEAD"]))
-        .context("Failed to push to remote")?;
+    git(dir, &["push", "--set-upstream", "origin", "HEAD"]).context("Failed to push to remote")?;
     Ok(())
 }
 
+/// Fetches from remote without merging.
+pub fn fetch(dir: &Path) -> Result<()> {
+    git(dir, &["fetch", "origin"]).context("Failed to fetch from remote")?;
+    Ok(())
+}
+
+/// Reads todos.json from FETCH_HEAD — the pure remote state before any merge.
+///
+/// Returns `None` if FETCH_HEAD does not exist yet.
+pub fn fetch_head_tasks_json(dir: &Path) -> Result<Option<String>> {
+    match git(dir, &["show", "FETCH_HEAD:todos.json"]) {
+        Ok(s) => Ok(Some(s)),
+        Err(_) => Ok(None),
+    }
+}
+
 pub enum PullResult {
-    Ok(String),
+    /// Remote is identical to local — nothing to do.
+    UpToDate,
+    /// Fetch + merge succeeded. Carries the remote todos.json captured
+    /// *before* `git merge` ran, so it is always a clean, non-concatenated list.
+    Merged(String),
+    /// Git detected a conflict in todos.json — caller resolves via :2/:3.
     Conflict,
 }
 
-/// Returns the raw git output for the caller to display.
+/// Fetches from remote, captures the remote todos.json **before** merging,
+/// then runs `git merge FETCH_HEAD`.
+///
+/// Separating fetch from merge lets the semantic merge in sync.rs receive
+/// two clean task lists, preventing duplicates caused by git's naive
+/// JSON array concatenation.
 pub fn pull(dir: &Path) -> Result<PullResult> {
-    let result = git(
-        dir,
-        &[
-            "pull",
-            "--no-rebase",
-            "--allow-unrelated-histories",
-            "origin",
-            "HEAD",
-        ],
-    );
+    // 1. Fetch only — no merge yet
+    fetch(dir)?;
+
+    // 2. Capture remote state before any merge happens
+    let remote_json = match fetch_head_tasks_json(dir)? {
+        Some(j) => j,
+        None => return Ok(PullResult::UpToDate),
+    };
+
+    // 3. Rebase local branch on top of FETCH_HEAD
+    let result = git(dir, &["rebase", "FETCH_HEAD"]);
 
     match result {
-        Ok(output) => Ok(PullResult::Ok(output)),
+        Ok(_) => Ok(PullResult::Merged(remote_json)),
         Err(_) => {
             let status = git(dir, &["status", "--porcelain"])?;
             if status.contains("todos.json") {
                 Ok(PullResult::Conflict)
             } else {
-                Err(anyhow::anyhow!("Pull failed for unknown reason"))
+                Err(anyhow::anyhow!("Merge failed for unknown reason"))
             }
         }
     }
