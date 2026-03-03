@@ -23,6 +23,7 @@
 //! | [`stats`] | `todo stats` |
 //! | [`tags`] | `todo tags` |
 //! | [`undone`] | `todo undone <ID>` |
+//! //! | [`purge`] | `todo purge` |
 
 pub mod add;
 pub mod clear;
@@ -33,6 +34,7 @@ pub mod edit;
 pub mod info;
 pub mod list;
 pub mod projects;
+pub mod purge;
 pub mod recur;
 pub mod remove;
 pub mod search;

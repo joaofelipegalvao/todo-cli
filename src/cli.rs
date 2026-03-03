@@ -215,6 +215,27 @@ pub enum Commands {
         id: usize,
     },
 
+    /// Permanently remove soft-deleted tombstones.
+    #[command(long_about = "Permanently remove soft-deleted tombstones\n\n\
+        Deleted tasks are kept as tombstones so sync can propagate deletions\n\
+        across devices. Once all devices have synced, tombstones can be purged.\n\n\
+        Examples:\n  \
+        todo purge                # remove tombstones older than 30 days\n  \
+        todo purge --days 7       # remove tombstones older than 7 days\n  \
+        todo purge --days 0       # remove all tombstones immediately\n  \
+        todo purge --dry-run      # preview without removing")]
+    Purge {
+        /// Remove tombstones older than this many days (default: 30).
+        #[arg(long, default_value_t = 30)]
+        days: u32,
+        /// Preview what would be removed without actually removing.
+        #[arg(long)]
+        dry_run: bool,
+        /// Skip the confirmation prompt.
+        #[arg(long, short = 'y')]
+        yes: bool,
+    },
+
     /// Sync tasks with a Git repository.
     #[command(subcommand)]
     #[command(long_about = "Sync tasks with a Git repository.\n\n\

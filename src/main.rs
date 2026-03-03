@@ -82,6 +82,10 @@ fn run(cli: Cli, storage: &impl Storage) -> Result<()> {
 
         Commands::ClearRecur { id } => commands::clear_recur::execute(storage, id),
 
+        Commands::Purge { days, dry_run, yes } => {
+            commands::purge::execute(storage, days, dry_run, yes)
+        }
+
         Commands::Sync(sub) => {
             let cmd = match sub {
                 SyncCommands::Init { remote } => SyncCommand::Init { remote },
