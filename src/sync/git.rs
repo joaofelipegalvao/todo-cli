@@ -195,7 +195,7 @@ pub enum PullResult {
     /// *before* `git merge` ran, so it is always a clean, non-concatenated list.
     Merged(String),
     /// Git detected a conflict in todos.json — caller resolves via :2/:3.
-    Conflict,
+    Conflict(String),
 }
 
 /// Fetches from remote, captures the remote todos.json **before** merging,
@@ -222,7 +222,7 @@ pub fn pull(dir: &Path) -> Result<PullResult> {
         Err(_) => {
             let status = git(dir, &["status", "--porcelain"])?;
             if status.contains("todos.json") {
-                Ok(PullResult::Conflict)
+                Ok(PullResult::Conflict(remote_json))
             } else {
                 Err(anyhow::anyhow!("Merge failed for unknown reason"))
             }

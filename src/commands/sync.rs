@@ -223,14 +223,12 @@ fn pull(storage: &impl Storage) -> Result<()> {
             print_merge_result(&result);
         }
 
-        git::PullResult::Conflict => {
+        git::PullResult::Conflict(remote_json) => {
             let ours_json = git::read_ours(&data_dir)?;
-            let theirs_json = git::read_theirs(&data_dir)?;
-
             let ours: Vec<crate::models::Task> =
                 serde_json::from_str(&ours_json).context("Failed to parse local todos.json")?;
             let theirs: Vec<crate::models::Task> =
-                serde_json::from_str(&theirs_json).context("Failed to parse remote todos.json")?;
+                serde_json::from_str(&remote_json).context("Failed to parse remote todos.json")?;
 
             let result = crate::sync::merge::merge(ours, theirs);
             storage.save(&result.tasks)?;
