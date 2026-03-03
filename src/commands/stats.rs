@@ -16,6 +16,9 @@ use crate::storage::Storage;
 pub fn execute(storage: &impl Storage) -> Result<()> {
     let tasks = storage.load()?;
 
+    // Work only with non-deleted tasks for all stats
+    let tasks: Vec<_> = tasks.into_iter().filter(|t| !t.is_deleted()).collect();
+
     if tasks.is_empty() {
         println!("{}", "\nNo tasks found.\n".dimmed());
         return Ok(());

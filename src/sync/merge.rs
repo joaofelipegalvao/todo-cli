@@ -16,8 +16,14 @@
 //!
 //! # Deletion
 //!
-//! Deletion is not handled — a task deleted on one side but present on the
-//! other will be re-added. Soft-delete support is deferred to a future version.
+//! Soft-delete is propagated via last-write-wins on `deleted_at`:
+//!
+//! - If only one side has `deleted_at`, that timestamp is compared against the
+//!   other side's `updated_at` to decide which wins.
+//! - If both sides have `deleted_at`, the most recent one wins (stays deleted).
+//! - A task deleted locally but absent from remote is kept as deleted so the
+//!   tombstone can propagate on the next push.
+//! - A task deleted on remote but not yet seen locally is merged in as deleted.
 
 use std::collections::{HashMap, HashSet};
 
@@ -71,12 +77,24 @@ pub fn merge(local: Vec<Task>, remote: Vec<Task>) -> MergeResult {
                 kept += 1;
             }
             Some(remote_task) => {
-                // In both — last-write-wins via updated_at
-                let use_remote = match (local_task.updated_at, remote_task.updated_at) {
+                // In both — last-write-wins.
+                //
+                // The "effective timestamp" of a version is the most recent of
+                // `updated_at` and `deleted_at` — whichever action happened last.
+                let effective = |t: &Task| -> Option<chrono::DateTime<chrono::Utc>> {
+                    match (t.updated_at, t.deleted_at) {
+                        (Some(u), Some(d)) => Some(u.max(d)),
+                        (Some(u), None) => Some(u),
+                        (None, Some(d)) => Some(d),
+                        (None, None) => None,
+                    }
+                };
+
+                let use_remote = match (effective(&local_task), effective(remote_task)) {
                     (Some(l), Some(r)) => r > l,
-                    (None, Some(_)) => true, // remote has timestamp, local doesn't
-                    (Some(_), None) => false, // local has timestamp, remote doesn't
-                    (None, None) => false,   // neither has timestamp — keep local
+                    (None, Some(_)) => true, // remote has a timestamp, local doesn't
+                    (Some(_), None) => false, // local has a timestamp, remote doesn't
+                    (None, None) => false,   // neither has a timestamp — keep local
                 };
 
                 if use_remote {
@@ -200,5 +218,105 @@ mod tests {
         assert_eq!(result.tasks.len(), 2);
         assert_eq!(result.added, 2);
         assert_eq!(result.kept, 0);
+    }
+
+    // ── Soft-delete propagation ───────────────────────────────────────────────
+
+    /// Remote soft-deleted the task more recently → local should adopt deletion.
+    #[test]
+    fn test_merge_remote_deletion_wins_over_stale_local() {
+        let mut local_task = task("Buy milk");
+        local_task.updated_at = Some(Utc::now() - chrono::Duration::seconds(120));
+
+        let mut remote_task = local_task.clone();
+        remote_task.soft_delete();
+
+        let result = merge(vec![local_task], vec![remote_task]);
+        assert_eq!(result.tasks.len(), 1);
+        assert!(result.tasks[0].is_deleted(), "remote deletion should win");
+        assert_eq!(result.updated, 1);
+    }
+
+    /// Local edited the task more recently than the remote deletion → keep local (undeleted).
+    #[test]
+    fn test_merge_local_edit_wins_over_stale_remote_deletion() {
+        let mut remote_task = task("Buy milk");
+        remote_task.deleted_at = Some(Utc::now() - chrono::Duration::seconds(60));
+        remote_task.updated_at = Some(Utc::now() - chrono::Duration::seconds(60));
+
+        let mut local_task = remote_task.clone();
+        local_task.deleted_at = None;
+        local_task.updated_at = Some(Utc::now());
+
+        let result = merge(vec![local_task], vec![remote_task]);
+        assert_eq!(result.tasks.len(), 1);
+        assert!(
+            !result.tasks[0].is_deleted(),
+            "local un-deletion should win"
+        );
+        assert_eq!(result.kept, 1);
+    }
+
+    /// Task deleted on both sides — most recent deletion timestamp wins, task stays deleted.
+    #[test]
+    fn test_merge_both_deleted_keeps_most_recent() {
+        let base = task("Buy milk");
+
+        let mut local_task = base.clone();
+        local_task.deleted_at = Some(Utc::now() - chrono::Duration::seconds(120));
+        local_task.updated_at = local_task.deleted_at;
+
+        let mut remote_task = base.clone();
+        remote_task.soft_delete();
+
+        let result = merge(vec![local_task], vec![remote_task.clone()]);
+        assert_eq!(result.tasks.len(), 1);
+        assert!(result.tasks[0].is_deleted());
+        assert_eq!(result.tasks[0].deleted_at, remote_task.deleted_at);
+        assert_eq!(result.updated, 1);
+    }
+
+    /// A task deleted locally but not on remote should be kept as tombstone.
+    #[test]
+    fn test_merge_local_only_deleted_task_preserved_as_tombstone() {
+        let mut local_task = task("Ghost task");
+        local_task.soft_delete();
+
+        let result = merge(vec![local_task.clone()], vec![]);
+        assert_eq!(result.tasks.len(), 1);
+        assert!(
+            result.tasks[0].is_deleted(),
+            "tombstone must be kept for sync propagation"
+        );
+        assert_eq!(result.kept, 1);
+    }
+
+    /// A task deleted on remote but absent locally arrives as deleted.
+    #[test]
+    fn test_merge_remote_only_deleted_task_arrives_as_deleted() {
+        let mut remote_task = task("Remote ghost");
+        remote_task.soft_delete();
+
+        let result = merge(vec![], vec![remote_task]);
+        assert_eq!(result.tasks.len(), 1);
+        assert!(result.tasks[0].is_deleted());
+        assert_eq!(result.added, 1);
+    }
+
+    /// Normal last-write-wins still works correctly alongside soft-delete logic.
+    #[test]
+    fn test_merge_normal_task_unaffected_by_soft_delete_logic() {
+        let local_a = task("A");
+        let mut remote_a = local_a.clone();
+        remote_a.updated_at = Some(Utc::now() + chrono::Duration::seconds(5));
+        remote_a.text = "A updated".to_string();
+
+        let remote_b = task("B");
+
+        let result = merge(vec![local_a], vec![remote_a, remote_b]);
+        assert_eq!(result.tasks.len(), 2);
+        assert_eq!(result.tasks[0].text, "A updated");
+        assert_eq!(result.updated, 1);
+        assert_eq!(result.added, 1);
     }
 }

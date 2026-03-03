@@ -84,6 +84,16 @@ pub struct Task {
     /// which sync treats as "older than any real timestamp".
     #[serde(default)]
     pub updated_at: Option<DateTime<Utc>>,
+    /// Timestamp of soft deletion.
+    ///
+    /// When set, the task is considered deleted and hidden from all views.
+    /// Kept in storage so that sync can propagate deletions across devices:
+    /// if `deleted_at` is more recent than the remote's `updated_at`, the
+    /// deletion wins (last-write-wins via [`Task::touch`] + `deleted_at`).
+    ///
+    /// `None` means the task is not deleted.
+    #[serde(default)]
+    pub deleted_at: Option<DateTime<Utc>>,
 }
 
 impl Task {
@@ -147,6 +157,7 @@ impl Task {
             depends_on: Vec::new(),
             completed_at: None,
             updated_at: Some(Utc::now()),
+            deleted_at: None,
         }
     }
 
@@ -159,6 +170,26 @@ impl Task {
     /// after modifying a task.
     pub fn touch(&mut self) {
         self.updated_at = Some(Utc::now());
+    }
+
+    /// Marks this task as soft-deleted.
+    ///
+    /// Sets `deleted_at` to the current UTC timestamp and calls [`touch`]
+    /// so that sync can propagate the deletion via last-write-wins.
+    /// The task remains in storage and is invisible to all normal views.
+    ///
+    /// Use [`is_deleted`] to filter deleted tasks out of lists.
+    ///
+    /// [`touch`]: Task::touch
+    /// [`is_deleted`]: Task::is_deleted
+    pub fn soft_delete(&mut self) {
+        self.deleted_at = Some(Utc::now());
+        self.touch();
+    }
+
+    /// Returns `true` if this task has been soft-deleted.
+    pub fn is_deleted(&self) -> bool {
+        self.deleted_at.is_some()
     }
 
     /// Marks this task as completed.
@@ -347,10 +378,11 @@ pub fn count_by_project(tasks: &[Task], project: &str) -> (usize, usize) {
     let matching: Vec<_> = tasks
         .iter()
         .filter(|t| {
-            t.project
-                .as_deref()
-                .map(|p| p.to_lowercase() == project_lower)
-                .unwrap_or(false)
+            !t.is_deleted()
+                && t.project
+                    .as_deref()
+                    .map(|p| p.to_lowercase() == project_lower)
+                    .unwrap_or(false)
         })
         .collect();
 
@@ -491,6 +523,38 @@ mod tests {
     }
 
     #[test]
+    fn test_deleted_at_none_on_new() {
+        let task = make_task("A");
+        assert!(task.deleted_at.is_none());
+        assert!(!task.is_deleted());
+    }
+
+    #[test]
+    fn test_soft_delete_sets_deleted_at() {
+        let mut task = make_task("A");
+        assert!(!task.is_deleted());
+        task.soft_delete();
+        assert!(task.is_deleted());
+        assert!(task.deleted_at.is_some());
+    }
+
+    #[test]
+    fn test_soft_delete_also_updates_updated_at() {
+        let mut task = make_task("A");
+        let before = task.updated_at;
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        task.soft_delete();
+        assert!(task.updated_at > before);
+    }
+
+    #[test]
+    fn test_soft_delete_deleted_at_lte_updated_at() {
+        let mut task = make_task("A");
+        task.soft_delete();
+        assert!(task.updated_at >= task.deleted_at);
+    }
+
+    #[test]
     fn test_touch_updates_timestamp() {
         let mut task = make_task("A");
         let before = task.updated_at;
@@ -593,6 +657,19 @@ mod tests {
     }
 
     #[test]
+    fn test_recurrence_next_is_not_deleted() {
+        let date = NaiveDate::from_ymd_opt(2026, 2, 10).unwrap();
+        let mut task = make_recurring(Some(Recurrence::Daily), Some(date));
+        task.soft_delete();
+        let parent_uuid = task.uuid;
+        let next = task.create_next_recurrence(parent_uuid).unwrap();
+        assert!(
+            !next.is_deleted(),
+            "next recurrence must not inherit deleted_at"
+        );
+    }
+
+    #[test]
     fn test_project_preserved_in_recurrence() {
         let date = NaiveDate::from_ymd_opt(2026, 2, 10).unwrap();
         let mut task = make_recurring(Some(Recurrence::Daily), Some(date));
@@ -647,6 +724,31 @@ mod tests {
         let (total, done) = count_by_project(&tasks, "work");
         assert_eq!(total, 2);
         assert_eq!(done, 1);
+    }
+
+    #[test]
+    fn test_count_by_project_excludes_deleted() {
+        let mut t1 = Task::new(
+            "A".to_string(),
+            Priority::Medium,
+            vec![],
+            Some("Work".to_string()),
+            None,
+            None,
+        );
+        t1.soft_delete();
+        let t2 = Task::new(
+            "B".to_string(),
+            Priority::Medium,
+            vec![],
+            Some("Work".to_string()),
+            None,
+            None,
+        );
+
+        let tasks = vec![t1, t2];
+        let (total, _) = count_by_project(&tasks, "Work");
+        assert_eq!(total, 1, "deleted tasks should not be counted");
     }
 
     #[test]

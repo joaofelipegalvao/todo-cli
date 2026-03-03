@@ -20,8 +20,14 @@ pub fn execute(
 ) -> Result<()> {
     let all_tasks = storage.load()?;
 
-    // Perform case-insensitive search on task text
-    let mut results: Vec<(usize, &_)> = all_tasks
+    // Perform case-insensitive search on task text, excluding deleted tasks
+    let visible: Vec<_> = all_tasks
+        .iter()
+        .filter(|t| !t.is_deleted())
+        .cloned()
+        .collect();
+
+    let mut results: Vec<(usize, &_)> = visible
         .iter()
         .enumerate()
         .filter(|(_, task)| task.text.to_lowercase().contains(&query.to_lowercase()))
@@ -48,6 +54,6 @@ pub fn execute(
     }
 
     let title = format!("Search results for \"{}\"", query);
-    display_lists(&results, &title, &all_tasks);
+    display_lists(&results, &title, &visible);
     Ok(())
 }

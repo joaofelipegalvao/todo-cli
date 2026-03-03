@@ -14,7 +14,7 @@ use crate::date_parser;
 use crate::error::TodoError;
 use crate::models::detect_cycle;
 use crate::storage::Storage;
-use crate::validation::{self, validate_task_id};
+use crate::validation::{self, validate_task_id, visible_indices};
 
 pub fn execute(storage: &impl Storage, args: EditArgs) -> Result<()> {
     let due = if let Some(ref due_str) = args.due {
@@ -24,32 +24,33 @@ pub fn execute(storage: &impl Storage, args: EditArgs) -> Result<()> {
     };
 
     let mut tasks = storage.load()?;
-    validate_task_id(args.id, tasks.len())?;
+    let vis = visible_indices(&tasks);
+    validate_task_id(args.id, vis.len())?;
+    let real_index = vis[args.id - 1];
 
-    // Resolve numeric IDs → UUIDs before any mutation
+    // Resolve numeric IDs → UUIDs before any mutation (deps use visible IDs too)
     let add_dep_uuids: Vec<Uuid> = args
         .add_dep
         .iter()
-        .map(|&id| validation::resolve_uuid(id, &tasks))
+        .map(|&id| validation::resolve_uuid_visible(id, &tasks))
         .collect::<Result<_, _>>()
         .map_err(anyhow::Error::from)?;
 
     let remove_dep_uuids: Vec<Uuid> = args
         .remove_dep
         .iter()
-        .map(|&id| validation::resolve_uuid(id, &tasks))
+        .map(|&id| validation::resolve_uuid_visible(id, &tasks))
         .collect::<Result<_, _>>()
         .map_err(anyhow::Error::from)?;
 
     // Pre-compute display string for clear_deps (needs immutable borrow before &mut)
-    let current_deps_display = tasks[args.id - 1]
+    let current_deps_display = tasks[real_index]
         .depends_on
         .iter()
         .filter_map(|uuid| {
-            tasks
-                .iter()
-                .position(|t| t.uuid == *uuid)
-                .map(|i| format!("#{}", i + 1))
+            let real_pos = tasks.iter().position(|t| t.uuid == *uuid)?;
+            let vis_id = vis.iter().position(|&i| i == real_pos).map(|p| p + 1)?;
+            Some(format!("#{}", vis_id))
         })
         .collect::<Vec<_>>()
         .join(", ");
@@ -61,10 +62,10 @@ pub fn execute(storage: &impl Storage, args: EditArgs) -> Result<()> {
         if *dep_id == args.id {
             return Err(TodoError::SelfDependency { task_id: args.id }.into());
         }
-        validate_task_id(*dep_id, tasks.len())?;
-        detect_cycle(&tasks, tasks[args.id - 1].uuid, dep_uuid)
+        validate_task_id(*dep_id, vis.len())?;
+        detect_cycle(&tasks, tasks[real_index].uuid, dep_uuid)
             .map_err(TodoError::DependencyCycle)?;
-        if tasks[args.id - 1].depends_on.contains(&dep_uuid) {
+        if tasks[real_index].depends_on.contains(&dep_uuid) {
             return Err(TodoError::DuplicateDependency {
                 task_id: args.id,
                 dep_id: *dep_id,
@@ -73,7 +74,7 @@ pub fn execute(storage: &impl Storage, args: EditArgs) -> Result<()> {
         }
     }
     for (dep_id, dep_uuid) in args.remove_dep.iter().zip(remove_dep_uuids.iter()) {
-        if !tasks[args.id - 1].depends_on.contains(dep_uuid) {
+        if !tasks[real_index].depends_on.contains(dep_uuid) {
             return Err(TodoError::DependencyNotFound {
                 task_id: args.id,
                 dep_id: *dep_id,
@@ -82,7 +83,7 @@ pub fn execute(storage: &impl Storage, args: EditArgs) -> Result<()> {
         }
     }
 
-    let task = &mut tasks[args.id - 1];
+    let task = &mut tasks[real_index];
 
     if let Some(new_text) = args.text {
         if new_text.trim().is_empty() {

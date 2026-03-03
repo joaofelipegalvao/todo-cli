@@ -10,13 +10,14 @@ use colored::Colorize;
 
 use crate::error::TodoError;
 use crate::storage::Storage;
-use crate::validation::validate_task_id;
+use crate::validation::{validate_task_id, visible_indices};
 
 pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     let mut tasks = storage.load()?;
-    validate_task_id(id, tasks.len())?;
+    let vis = visible_indices(&tasks);
+    validate_task_id(id, vis.len())?;
 
-    let index = id - 1;
+    let index = vis[id - 1];
 
     if tasks[index].completed {
         return Err(TodoError::TaskAlreadyInStatus {
@@ -31,13 +32,11 @@ pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     if !blocking.is_empty() {
         let ids = blocking
             .iter()
-            .filter_map(|uuid| tasks.iter().position(|t| t.uuid == *uuid).map(|i| i + 1))
-            .map(|num_id| {
-                let text = tasks
-                    .get(num_id - 1)
-                    .map(|t| format!("\"{}\"", t.text))
-                    .unwrap_or_default();
-                format!("#{} {}", num_id, text)
+            .filter_map(|uuid| {
+                let real_pos = tasks.iter().position(|t| t.uuid == *uuid)?;
+                let vis_id = vis.iter().position(|&i| i == real_pos).map(|p| p + 1)?;
+                let text = tasks[real_pos].text.clone();
+                Some(format!("#{} \"{}\"", vis_id, text))
             })
             .collect::<Vec<_>>()
             .join(", ");
@@ -60,12 +59,14 @@ pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
         if !already_exists {
             tasks.push(next_task);
             storage.save(&tasks)?;
-            let next_id = tasks.len();
+            // The newly pushed task is always visible (not deleted), so its
+            // visible ID equals the count of non-deleted tasks.
+            let next_vis_id = tasks.iter().filter(|t| !t.is_deleted()).count();
             println!("{}", "✓ Task marked as completed".green());
             println!(
                 "{} Task #{} created (due {})",
                 "↻".cyan(),
-                next_id,
+                next_vis_id,
                 next_due.format("%Y-%m-%d")
             );
         } else {

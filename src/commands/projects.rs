@@ -15,6 +15,7 @@ pub fn execute(storage: &impl Storage) -> Result<()> {
 
     let mut projects: Vec<String> = tasks
         .iter()
+        .filter(|t| !t.is_deleted())
         .filter_map(|t| t.project.clone())
         .collect::<std::collections::HashSet<_>>()
         .into_iter()

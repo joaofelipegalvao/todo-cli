@@ -12,9 +12,9 @@ use crate::storage::Storage;
 pub fn execute(storage: &impl Storage) -> Result<()> {
     let tasks = storage.load()?;
 
-    // Collect all unique tags
+    // Collect all unique tags from non-deleted tasks
     let mut all_tags: Vec<String> = Vec::new();
-    for task in &tasks {
+    for task in tasks.iter().filter(|t| !t.is_deleted()) {
         for tag in &task.tags {
             if !all_tags.contains(tag) {
                 all_tags.push(tag.to_owned());
@@ -30,7 +30,10 @@ pub fn execute(storage: &impl Storage) -> Result<()> {
 
     println!("\nTags:\n");
     for tag in &all_tags {
-        let count = tasks.iter().filter(|t| t.tags.contains(tag)).count();
+        let count = tasks
+            .iter()
+            .filter(|t| !t.is_deleted() && t.tags.contains(tag))
+            .count();
         println!(
             "  {} ({} task{})",
             tag.cyan(),

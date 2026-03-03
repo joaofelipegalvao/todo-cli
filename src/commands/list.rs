@@ -26,6 +26,7 @@ pub fn execute(
 
     let mut indexed_tasks: Vec<(usize, &_)> = all_tasks
         .iter()
+        .filter(|t| !t.is_deleted())
         .enumerate()
         .map(|(i, task)| (i + 1, task))
         .collect();
@@ -95,7 +96,12 @@ pub fn execute(
     }
 
     let title = determine_title(status, priority, due, project.as_deref(), recur);
-    display_lists(&indexed_tasks, &title, &all_tasks);
+    let visible: Vec<_> = all_tasks
+        .iter()
+        .filter(|t| !t.is_deleted())
+        .cloned()
+        .collect();
+    display_lists(&indexed_tasks, &title, &visible);
     Ok(())
 }
 

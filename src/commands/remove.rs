@@ -1,8 +1,10 @@
 //! Handler for `todo remove <ID>`.
 //!
-//! Shows the task text, optionally prompts for confirmation, removes the task
-//! from the list, and saves. IDs are re-indexed automatically by the storage
-//! layer on next load.
+//! Shows the task text, optionally prompts for confirmation, then soft-deletes
+//! the task by setting its `deleted_at` timestamp. The task remains in storage
+//! so that sync can propagate the deletion to other devices via last-write-wins.
+//!
+//! IDs are 1-based positions in the **visible** (non-deleted) task list.
 
 use anyhow::Result;
 use colored::Colorize;
@@ -13,10 +15,20 @@ use crate::validation::validate_task_id;
 
 pub fn execute(storage: &impl Storage, id: usize, yes: bool) -> Result<()> {
     let mut tasks = storage.load()?;
-    validate_task_id(id, tasks.len())?;
 
-    let index = id - 1;
-    let task_text = &tasks[index].text;
+    // Build a view of only visible (non-deleted) tasks, preserving their
+    // original indices so we can mutate the right entry in `tasks`.
+    let visible_indices: Vec<usize> = tasks
+        .iter()
+        .enumerate()
+        .filter(|(_, t)| !t.is_deleted())
+        .map(|(i, _)| i)
+        .collect();
+
+    validate_task_id(id, visible_indices.len())?;
+
+    let real_index = visible_indices[id - 1];
+    let task_text = tasks[real_index].text.clone();
 
     if !yes {
         println!("\n{} {}", "".yellow(), task_text.bright_white());
@@ -27,12 +39,13 @@ pub fn execute(storage: &impl Storage, id: usize, yes: bool) -> Result<()> {
         }
     }
 
-    let removed_task = tasks.remove(index);
+    tasks[real_index].soft_delete();
     storage.save(&tasks)?;
+
     println!(
         "{} {}",
         "✓".green(),
-        format!("Task removed: {}", removed_task.text).dimmed()
+        format!("Task removed: {}", task_text).dimmed()
     );
     Ok(())
 }

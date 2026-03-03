@@ -8,7 +8,34 @@ use crate::models::{Recurrence, Task};
 use chrono::NaiveDate;
 use uuid::Uuid;
 
+/// Returns the indices (into the full `tasks` slice) of all non-deleted tasks,
+/// preserving their original order.
+///
+/// Use this to map a user-facing 1-based ID (counting only visible tasks)
+/// back to a real position in the storage array.
+pub fn visible_indices(tasks: &[Task]) -> Vec<usize> {
+    tasks
+        .iter()
+        .enumerate()
+        .filter(|(_, t)| !t.is_deleted())
+        .map(|(i, _)| i)
+        .collect()
+}
+
+/// Resolves a user-facing 1-based ID to its UUID, considering only visible
+/// (non-deleted) tasks.
+///
+/// # Errors
+/// Returns `TodoError::InvalidTaskId` if the ID is out of range.
+pub fn resolve_uuid_visible(id: usize, tasks: &[Task]) -> Result<Uuid, TodoError> {
+    let indices = visible_indices(tasks);
+    validate_task_id(id, indices.len())?;
+    Ok(tasks[indices[id - 1]].uuid)
+}
+
 /// Resolves a 1-based numeric task ID to its UUID.
+///
+/// **Prefer [`resolve_uuid_visible`] in command handlers.**
 ///
 /// # Errors
 /// Returns `TodoError::InvalidTaskId` if the ID is out of range.
@@ -222,6 +249,44 @@ pub fn validate_task(task: &Task, is_new: bool) -> Result<(), TodoError> {
 mod tests {
     use super::*;
     use crate::models::Priority;
+
+    fn make_task(text: &str) -> Task {
+        Task::new(text.to_string(), Priority::Medium, vec![], None, None, None)
+    }
+
+    #[test]
+    fn test_visible_indices_excludes_deleted() {
+        let mut tasks = vec![make_task("A"), make_task("B"), make_task("C")];
+        tasks[1].soft_delete();
+        let indices = visible_indices(&tasks);
+        assert_eq!(indices, vec![0, 2]);
+    }
+
+    #[test]
+    fn test_visible_indices_all_visible() {
+        let tasks = vec![make_task("A"), make_task("B")];
+        assert_eq!(visible_indices(&tasks), vec![0, 1]);
+    }
+
+    #[test]
+    fn test_visible_indices_all_deleted() {
+        let mut tasks = vec![make_task("A"), make_task("B")];
+        tasks[0].soft_delete();
+        tasks[1].soft_delete();
+        assert!(visible_indices(&tasks).is_empty());
+    }
+
+    #[test]
+    fn test_resolve_uuid_visible_skips_deleted() {
+        let mut tasks = vec![make_task("A"), make_task("B"), make_task("C")];
+        let uuid_a = tasks[0].uuid;
+        let uuid_c = tasks[2].uuid;
+        tasks[1].soft_delete(); // visible: A=1, C=2
+
+        assert_eq!(resolve_uuid_visible(1, &tasks).unwrap(), uuid_a);
+        assert_eq!(resolve_uuid_visible(2, &tasks).unwrap(), uuid_c);
+        assert!(resolve_uuid_visible(3, &tasks).is_err());
+    }
 
     #[test]
     fn test_validate_project_name_valid() {
