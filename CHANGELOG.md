@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.20.0](https://github.com/joaofelipegalvao/rustodo/compare/v2.19.0..v2.20.0) - 2026-03-04
+
+### Features
+
+- Implement TUI MVP with full task management interface - ([36b4c05](https://github.com/joaofelipegalvao/rustodo/commit/36b4c05d1c5ee53a2daae9d1e0f9725d2d8895d3))
+
+### Bug Fixes
+
+- Resolve clippy warnings in events.rs, ui.rs and done.rs - ([7d8ff79](https://github.com/joaofelipegalvao/rustodo/commit/7d8ff79d48fc42e7fbe76f7280010ee6a56e2a8e))
+- Resolve clippy warnings in events.rs, ui.rs and done.rs - ([4f0557d](https://github.com/joaofelipegalvao/rustodo/commit/4f0557dac2f9e26edd05901287bd2f36650b32c6))
 ## [2.19.0](https://github.com/joaofelipegalvao/rustodo/compare/v2.18.0..v2.19.0) - 2026-03-03
 
 ### Features
@@ -433,6 +443,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Features
 
 - V1 - basic todo CLI with add/list commands - ([9580ae2](https://github.com/joaofelipegalvao/rustodo/commit/9580ae297837c9a6c5d4b18868d2f3abac1b1b9e))
+[2.20.0]: https://github.com/joaofelipegalvao/rustodo/compare/v2.19.0...v2.20.0
 [2.19.0]: https://github.com/joaofelipegalvao/rustodo/compare/v2.18.0...v2.19.0
 [2.18.0]: https://github.com/joaofelipegalvao/rustodo/compare/v2.17.5...v2.18.0
 [2.17.5]: https://github.com/joaofelipegalvao/rustodo/compare/v2.17.4...v2.17.5
