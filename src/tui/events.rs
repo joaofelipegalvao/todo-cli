@@ -348,15 +348,17 @@ fn handle_add_form(
         }
         KeyCode::Backspace => {
             if let Some(ref mut form) = app.edit_form
-                && let Some(buf) = form.focused_buf_mut() {
-                    buf.pop();
-                }
+                && let Some(buf) = form.focused_buf_mut()
+            {
+                buf.pop();
+            }
         }
         KeyCode::Char(c) => {
             if let Some(ref mut form) = app.edit_form
-                && let Some(buf) = form.focused_buf_mut() {
-                    buf.push(c);
-                }
+                && let Some(buf) = form.focused_buf_mut()
+            {
+                buf.push(c);
+            }
         }
         _ => {}
     }
@@ -493,17 +495,19 @@ fn handle_edit_form(
         // Backspace — delete from focused text field
         KeyCode::Backspace => {
             if let Some(ref mut form) = app.edit_form
-                && let Some(buf) = form.focused_buf_mut() {
-                    buf.pop();
-                }
+                && let Some(buf) = form.focused_buf_mut()
+            {
+                buf.pop();
+            }
         }
 
         // Any printable char — append to focused text field
         KeyCode::Char(c) => {
             if let Some(ref mut form) = app.edit_form
-                && let Some(buf) = form.focused_buf_mut() {
-                    buf.push(c);
-                }
+                && let Some(buf) = form.focused_buf_mut()
+            {
+                buf.push(c);
+            }
         }
 
         _ => {}
@@ -647,11 +651,12 @@ fn commit_edit_form(app: &mut App, storage: &impl Storage) -> Result<()> {
                 let mut tasks = storage.load()?;
                 let task = &mut tasks[real];
                 if task.recurrence != form.recurrence
-                    && (form.recurrence.is_some() || task.recurrence.is_some()) {
-                        task.recurrence = form.recurrence;
-                        task.touch();
-                        storage.save(&tasks)?;
-                    }
+                    && (form.recurrence.is_some() || task.recurrence.is_some())
+                {
+                    task.recurrence = form.recurrence;
+                    task.touch();
+                    storage.save(&tasks)?;
+                }
             }
             app.status_msg = Some(msg);
             app.mode = Mode::Normal;
