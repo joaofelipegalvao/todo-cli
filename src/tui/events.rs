@@ -697,4 +697,3 @@ fn truncate_str(s: &str, max: usize) -> String {
     }
     result
 }
-
