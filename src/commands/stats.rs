@@ -1,10 +1,6 @@
+// src/commands/stats.rs
+
 //! Handler for `todo stats`.
-//!
-//! Computes and prints:
-//! - Overview counts (total, completed, pending, overdue, blocked)
-//! - Breakdown by priority
-//! - Breakdown by project
-//! - A bar chart of completions over the last 7 days
 
 use anyhow::Result;
 use chrono::{Duration, Local};
@@ -14,10 +10,9 @@ use crate::models::count_by_project;
 use crate::storage::Storage;
 
 pub fn execute(storage: &impl Storage) -> Result<()> {
-    let tasks = storage.load()?;
+    let (all_tasks, projects, _) = storage.load_all()?;
 
-    // Work only with non-deleted tasks for all stats
-    let tasks: Vec<_> = tasks.into_iter().filter(|t| !t.is_deleted()).collect();
+    let tasks: Vec<_> = all_tasks.into_iter().filter(|t| !t.is_deleted()).collect();
 
     if tasks.is_empty() {
         println!("{}", "\nNo tasks found.\n".dimmed());
@@ -37,10 +32,8 @@ pub fn execute(storage: &impl Storage) -> Result<()> {
         .count();
     let pct = percent(completed, total);
 
-    // === Header ===
     println!("\n{}\n", "Todo Statistics".bright_white().bold());
 
-    // === Overview ===
     section("Overview");
     stat_line("Total tasks", &total.to_string(), None);
     stat_line(
@@ -60,7 +53,6 @@ pub fn execute(storage: &impl Storage) -> Result<()> {
     }
     println!();
 
-    // === By Priority ===
     section("By Priority");
     for (label, variant) in &[("High", "high"), ("Medium", "medium"), ("Low", "low")] {
         let t: Vec<_> = tasks
@@ -81,28 +73,24 @@ pub fn execute(storage: &impl Storage) -> Result<()> {
     }
     println!();
 
-    // === By Project ===
-    let mut projects: Vec<String> = tasks
-        .iter()
-        .filter_map(|t| t.project.clone())
-        .collect::<std::collections::HashSet<_>>()
-        .into_iter()
-        .collect();
-    projects.sort();
-
-    if !projects.is_empty() {
+    // By Project — iterate over Project entities, look up task counts by UUID
+    let visible_projects: Vec<_> = projects.iter().filter(|p| !p.is_deleted()).collect();
+    if !visible_projects.is_empty() {
         section("By Project");
-        for project in &projects {
-            let (total_p, done_p) = count_by_project(&tasks, project);
+        for project in &visible_projects {
+            let (total_p, done_p) = count_by_project(&tasks, project.uuid);
+            if total_p == 0 {
+                continue;
+            }
             let pct_p = percent(done_p, total_p);
             println!(
                 "  {:<24} {}  ({}% done)",
-                project.bright_white(),
+                project.name.bright_white(),
                 format!("{} tasks", total_p).cyan(),
                 pct_p,
             );
         }
-        let no_project = tasks.iter().filter(|t| t.project.is_none()).count();
+        let no_project = tasks.iter().filter(|t| t.project_id.is_none()).count();
         if no_project > 0 {
             println!(
                 "  {:<24} {}",
@@ -113,7 +101,6 @@ pub fn execute(storage: &impl Storage) -> Result<()> {
         println!();
     }
 
-    // === Activity — last 7 days ===
     section("Activity — last 7 days");
 
     let max_bar = 10usize;

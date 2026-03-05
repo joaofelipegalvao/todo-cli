@@ -1,9 +1,4 @@
 //! Handler for `todo edit <ID>`.
-//!
-//! Applies partial updates to an existing task. Only fields explicitly
-//! provided by the caller are changed; everything else is preserved.
-//! Validates dependency additions for self-references and cycles before
-//! mutating any state.
 
 use anyhow::Result;
 use colored::Colorize;
@@ -12,7 +7,7 @@ use uuid::Uuid;
 use crate::cli::EditArgs;
 use crate::date_parser;
 use crate::error::TodoError;
-use crate::models::detect_cycle;
+use crate::models::{Project, detect_cycle};
 use crate::storage::Storage;
 use crate::validation::{self, validate_task_id, visible_indices};
 
@@ -109,19 +104,23 @@ fn execute_inner(storage: &impl Storage, args: EditArgs, silent: bool) -> Result
         changes.push(format!("priority → {}", new_priority.letter()));
     }
 
+    // ── project ───────────────────────────────────────────────────────────────
     if args.clear_project {
-        if task.project.is_some() {
-            let old = task.project.take().unwrap();
-            changes.push(format!("project cleared → was {}", old.dimmed()));
+        if task.project_id.is_some() {
+            task.project_id = None;
+            changes.push("project → cleared".dimmed().to_string());
         }
-    } else if let Some(new_project) = args.project {
-        validation::validate_project_name(&new_project)?;
-        if task.project.as_deref() != Some(&new_project) {
-            task.project = Some(new_project.clone());
-            changes.push(format!("project → {}", new_project.cyan()));
+    } else if let Some(ref new_project_name) = args.project {
+        validation::validate_project_name(new_project_name)?;
+        let projects = storage.load_projects()?;
+        let new_uuid = Project::resolve_or_create(storage, &projects, new_project_name)?;
+        if task.project_id != Some(new_uuid) {
+            task.project_id = Some(new_uuid);
+            changes.push(format!("project → {}", new_project_name.cyan()));
         }
     }
 
+    // ── tags ──────────────────────────────────────────────────────────────────
     if args.clear_tags {
         if !task.tags.is_empty() {
             let old_tags = task.tags.clone();
@@ -169,6 +168,7 @@ fn execute_inner(storage: &impl Storage, args: EditArgs, silent: bool) -> Result
         }
     }
 
+    // ── due date ──────────────────────────────────────────────────────────────
     if args.clear_due {
         if task.due_date.is_some() {
             task.due_date = None;
@@ -181,6 +181,7 @@ fn execute_inner(storage: &impl Storage, args: EditArgs, silent: bool) -> Result
         changes.push(format!("due date → {}", new_due.to_string().cyan()));
     }
 
+    // ── dependencies ──────────────────────────────────────────────────────────
     if args.clear_deps {
         if !task.depends_on.is_empty() {
             task.depends_on.clear();

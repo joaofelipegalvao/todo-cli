@@ -1,6 +1,8 @@
+// src/display/table.rs
+
 use colored::Colorize;
 
-use crate::models::{Recurrence, Task};
+use crate::models::{Project, Recurrence, Task};
 
 use super::formatting::{get_due_colored, get_due_text, render_checkbox};
 
@@ -9,20 +11,6 @@ const PRIORITY_WIDTH: usize = 1;
 const STATUS_WIDTH: usize = 3;
 const RECUR_WIDTH: usize = 1;
 
-/// Computes column widths and renders a task list table to stdout.
-///
-/// Column visibility is **contextual**: `Project`, `Tags`, `Due`, and
-/// `Recurrence` columns are only shown when at least one task in the current
-/// view has that field set, keeping the output compact for simple lists.
-///
-/// # Arguments
-///
-/// * `tasks` — slice of `(1-based ID, &Task)` pairs to render.
-/// * `all_tasks` — the full, unfiltered task list, used to resolve dependency
-///   blocking status.
-///
-/// Construct via [`TableLayout::new`] and then call the display methods, or
-/// use the convenience wrapper [`display_lists`] which handles everything.
 pub struct TableLayout<'a> {
     id: usize,
     priority: usize,
@@ -37,13 +25,14 @@ pub struct TableLayout<'a> {
     show_tags: bool,
     show_due: bool,
     all_tasks: &'a [Task],
+    projects: &'a [Project],
 }
 
 impl<'a> TableLayout<'a> {
-    pub fn new(tasks: &[(usize, &Task)], all_tasks: &'a [Task]) -> Self {
-        let (task, project, tags, due) = calculate_column_widths(tasks);
+    pub fn new(tasks: &[(usize, &Task)], all_tasks: &'a [Task], projects: &'a [Project]) -> Self {
+        let (task_w, project_w, tags_w, due_w) = calculate_column_widths(tasks, projects);
         let show_recur = tasks.iter().any(|(_, t)| t.recurrence.is_some());
-        let show_project = tasks.iter().any(|(_, t)| t.project.is_some());
+        let show_project = tasks.iter().any(|(_, t)| t.project_id.is_some());
         let show_tags = tasks.iter().any(|(_, t)| !t.tags.is_empty());
         let show_due = tasks.iter().any(|(_, t)| t.due_date.is_some());
 
@@ -52,15 +41,16 @@ impl<'a> TableLayout<'a> {
             priority: PRIORITY_WIDTH,
             status: STATUS_WIDTH,
             recur: RECUR_WIDTH,
-            task,
-            project,
-            tags,
-            due,
+            task: task_w,
+            project: project_w,
+            tags: tags_w,
+            due: due_w,
             show_recur,
             show_project,
             show_tags,
             show_due,
             all_tasks,
+            projects,
         }
     }
 
@@ -115,11 +105,15 @@ impl<'a> TableLayout<'a> {
 
         let letter = task.priority.letter();
         let task_text = truncate(&task.text, self.task);
-        let project_str = task
-            .project
-            .as_deref()
-            .map(|p| truncate(p, self.project))
-            .unwrap_or_default();
+
+        // Resolve project UUID → name for display
+        let project_name = task
+            .project_id
+            .and_then(|pid| self.projects.iter().find(|p| p.uuid == pid))
+            .map(|p| p.name.as_str())
+            .unwrap_or("");
+        let project_str = truncate(project_name, self.project);
+
         let tags_str = if task.tags.is_empty() {
             String::new()
         } else {
@@ -183,7 +177,10 @@ fn truncate(s: &str, max: usize) -> String {
     }
 }
 
-fn calculate_column_widths(tasks: &[(usize, &Task)]) -> (usize, usize, usize, usize) {
+fn calculate_column_widths(
+    tasks: &[(usize, &Task)],
+    projects: &[Project],
+) -> (usize, usize, usize, usize) {
     let mut max_task = 10;
     let mut max_project = 7;
     let mut max_tags = 4;
@@ -191,9 +188,14 @@ fn calculate_column_widths(tasks: &[(usize, &Task)]) -> (usize, usize, usize, us
 
     for (_, task) in tasks {
         max_task = max_task.max(task.text.len());
-        if let Some(p) = &task.project {
-            max_project = max_project.max(p.len());
+
+        // Resolve UUID → name to compute column width
+        if let Some(pid) = task.project_id {
+            if let Some(p) = projects.iter().find(|p| p.uuid == pid) {
+                max_project = max_project.max(p.name.len());
+            }
         }
+
         if !task.tags.is_empty() {
             max_tags = max_tags.max(task.tags.join(", ").len());
         }
@@ -212,37 +214,15 @@ fn calculate_column_widths(tasks: &[(usize, &Task)]) -> (usize, usize, usize, us
 }
 
 /// Renders a labeled task list table to stdout.
-///
-/// Prints a title line, a column header, a separator, one row per task, a
-/// closing separator, and a `X of Y completed (Z%)` summary line.
-///
-/// # Arguments
-///
-/// * `tasks`     — `(1-based ID, &Task)` pairs to display.
-/// * `title`     — Section heading printed above the table.
-/// * `all_tasks` — Full task list used to compute blocked status.
-///
-/// # Example
-///
-/// ```no_run
-/// use rustodo::display::display_lists;
-/// use rustodo::models::{Task, Priority};
-///
-/// let all_tasks = vec![Task::new(
-///     "Buy milk".to_string(),
-///     Priority::Medium,
-///     vec![],
-///     None,
-///     None,
-///     None,
-/// )];
-/// let indexed: Vec<(usize, &Task)> = all_tasks.iter().enumerate().map(|(i, t)| (i + 1, t)).collect();
-/// display_lists(&indexed, "My tasks", &all_tasks);
-/// ```
-pub fn display_lists(tasks: &[(usize, &Task)], title: &str, all_tasks: &[Task]) {
+pub fn display_lists(
+    tasks: &[(usize, &Task)],
+    title: &str,
+    all_tasks: &[Task],
+    projects: &[Project],
+) {
     println!("\n{}:\n", title);
 
-    let layout = TableLayout::new(tasks, all_tasks);
+    let layout = TableLayout::new(tasks, all_tasks, projects);
     layout.display_header();
     layout.display_separator();
 

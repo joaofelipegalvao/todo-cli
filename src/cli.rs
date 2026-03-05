@@ -1,16 +1,11 @@
 //! Command-line interface definitions.
-//!
-//! This module uses [`clap`] to define the full CLI surface of `rustodo`:
-//! the top-level [`Cli`] struct, the [`Commands`] enum with one variant per
-//! subcommand, and the [`AddArgs`] helper struct for the `add` subcommand.
-//!
-//! When invoked with no subcommand, `todo` launches the TUI automatically.
 
 use clap::{Args, Parser, Subcommand};
 
-use crate::models::{DueFilter, Priority, Recurrence, RecurrenceFilter, SortBy, StatusFilter};
+use crate::models::{
+    Difficulty, DueFilter, Priority, Recurrence, RecurrenceFilter, SortBy, StatusFilter,
+};
 
-/// Top-level CLI entry point.
 #[derive(Parser)]
 #[command(name = "rustodo")]
 #[command(author = "github.com/joaofelipegalvao")]
@@ -21,74 +16,46 @@ use crate::models::{DueFilter, Priority, Recurrence, RecurrenceFilter, SortBy, S
     todo\n\n    \
     # Add a task to a project with a natural language date\n    \
     todo add \"Fix login bug\" --project \"Backend\" --priority high --due \"next friday\"\n\n    \
-    # Add a task due in 3 days\n    \
-    todo add \"Review PR\" --due \"in 3 days\"\n\n    \
-    # Add a task with strict date format\n    \
-    todo add \"Project deadline\" --due 2026-03-15\n\n    \
-    # List all tasks in a project\n    \
-    todo list --project \"Backend\"\n\n    \
-    # List pending tasks in a project, sorted by due date\n    \
-    todo list --project \"Backend\" --status pending --sort due\n\n    \
+    # Add a project with tech stack\n    \
+    todo project add \"Backend\" --difficulty hard --tech Rust,PostgreSQL\n\n    \
+    # Mark a project as done\n    \
+    todo project edit 1 --done\n\n    \
+    # Add a note linked to a project\n    \
+    todo note add \"Setup do banco de dados\" --project \"Backend\" --language Rust\n\n    \
+    # Add a resource and link it to a note\n    \
+    todo resource add \"sqlx docs\" --url https://docs.rs/sqlx --tag rust,db\n    \
+    todo note edit 1 --add-resource 1\n\n    \
     # Configure sync and push\n    \
     todo sync init git@github.com:user/tasks.git\n    \
     todo sync push\n\n\
 For more information, visit: https://github.com/joaofelipegalvao/rustodo
 ")]
 pub struct Cli {
-    /// The subcommand to execute. If omitted, launches the TUI.
     #[command(subcommand)]
     pub command: Option<Commands>,
 }
 
-/// All available subcommands.
 #[derive(Subcommand)]
 pub enum Commands {
     /// Add a new task to your todo list
     #[command(visible_alias = "a")]
-    #[command(long_about = "Add a new task to your todo list\n\n\
-        Creates a new task with the specified text and optional metadata like priority,\n\
-        tags, and due date. Tasks are saved immediately to todos.json.\n\n\
-        Due dates accept both natural language and strict YYYY-MM-DD format:\n  \
-        todo add \"Meeting\" --due tomorrow\n  \
-        todo add \"Deploy\" --due \"next friday\"\n  \
-        todo add \"Report\" --due \"in 3 days\"\n  \
-        todo add \"Deadline\" --due 2026-03-15\n\n\
-        Assign to a project:\n  \
-        todo add \"Fix bug\" --project \"Backend\"\n  \
-        todo add \"Write docs\" --project \"Documentation\" --tag work\n\n\
-        Use --recurrence to make the task repeat automatically when completed.")]
     Add(AddArgs),
 
     /// List and filter tasks
     #[command(visible_alias = "ls")]
-    #[command(
-        long_about = "List and filter tasks with powerful filtering options\n\n\
-        Examples:\n  \
-        todo list --project \"Backend\"\n  \
-        todo list --project \"Backend\" --status pending\n  \
-        todo list --recurrence daily\n  \
-        todo list --status pending --priority high --sort due"
-    )]
     List {
-        /// Show all, pending or done tasks.
         #[arg(long, value_enum, default_value_t = StatusFilter::All)]
         status: StatusFilter,
-        /// Filter by priority level.
         #[arg(long, value_enum)]
         priority: Option<Priority>,
-        /// Filter by due-date window
         #[arg(long, value_enum)]
         due: Option<DueFilter>,
-        /// Sort results.
         #[arg(long, short = 's', value_enum)]
         sort: Option<SortBy>,
-        /// Filter by tag name.
         #[arg(long, short = 't')]
         tag: Option<String>,
-        /// Filter by project name (case-insensitive)
         #[arg(long, short = 'p')]
         project: Option<String>,
-        /// Filter by recurrence pattern
         #[arg(long, short = 'r', value_enum)]
         recurrence: Option<RecurrenceFilter>,
     },
@@ -96,7 +63,6 @@ pub enum Commands {
     /// Mark a task as completed
     #[command(visible_alias = "complete")]
     Done {
-        /// 1-based task ID
         #[arg(value_name = "ID")]
         id: usize,
     },
@@ -104,7 +70,6 @@ pub enum Commands {
     /// Mark a completed task as pending
     #[command(visible_alias = "undo")]
     Undone {
-        /// 1-based task ID
         #[arg(value_name = "ID")]
         id: usize,
     },
@@ -112,37 +77,19 @@ pub enum Commands {
     /// Remove a task permanently
     #[command(visible_aliases = ["rm", "delete"])]
     Remove {
-        /// 1-based Task ID.
         #[arg(value_name = "ID")]
         id: usize,
-        /// Skip the interactive confirmation prompt.
         #[arg(long, short = 'y')]
         yes: bool,
     },
 
     /// Edit an existing task
     #[command(visible_alias = "e")]
-    #[command(long_about = "Edit an existing task\n\n\
-        Modify task properties like text, priority, tags, or due date.\n\
-        Only specify the fields you want to change.\n\n\
-        Due dates accept natural language or YYYY-MM-DD:\n  \
-        todo edit 3 --due tomorrow\n  \
-        todo edit 3 --due \"next monday\"\n  \
-        todo edit 3 --due \"in 5 days\"\n  \
-        todo edit 3 --due 2026-04-01\n\n\
-        Tag operations:\n  \
-        todo edit 1 --add-tag urgent,critical     # Add multiple tags\n  \
-        todo edit 1 --remove-tag work,team        # Remove multiple tags\n  \
-        todo edit 1 --add-tag urgent --remove-tag team  # Combine operations\n\n\
-        Project operations:\n  \
-        todo edit 3 --project \"Backend\"   # Assign to a project\n  \
-        todo edit 3 --clear-project         # Remove from project")]
     Edit(EditArgs),
 
     /// Clear all tasks
     #[command(visible_alias = "reset")]
     Clear {
-        /// Skip the interactive confirmation prompt.
         #[arg(long, short = 'y')]
         yes: bool,
     },
@@ -150,16 +97,12 @@ pub enum Commands {
     /// Search for tasks by text content
     #[command(visible_alias = "find")]
     Search {
-        /// Case-insensitive substring to match against task descriptions.
         #[arg(value_name = "QUERY")]
         query: String,
-        /// Narrow results to a specific tag.
         #[arg(long, short = 't')]
         tag: Option<String>,
-        /// Narrow results to a specific project.
         #[arg(long, short = 'p')]
         project: Option<String>,
-        /// Narrow results by completion status.
         #[arg(long, value_enum, default_value_t = StatusFilter::All)]
         status: StatusFilter,
     },
@@ -170,23 +113,15 @@ pub enum Commands {
     /// List all tags with task counts.
     Tags,
 
-    /// List all projects with task counts.
-    #[command(long_about = "List all projects used across your tasks\n\n\
-        Shows each project name with the count of pending and completed tasks.\n\n\
-        Use 'todo list --project <NAME>' to see tasks within a specific project.")]
+    /// List all projects (shorthand for `todo project list`).
     Projects,
 
+    /// Manage projects.
+    #[command(subcommand)]
+    Project(ProjectCommands),
+
     /// Show dependency graph for a task.
-    #[command(long_about = "Show the dependency graph for a task\n\n
-        Displays:\n  \
-        • Tasks this task depends on (with completion status)\n  \
-        • Tasks that depend on this one\n  \
-        • Whether the task is currently blocked\n\n\
-        Examples:\n  \
-        todo deps 5\n  \
-        todo deps 1")]
     Deps {
-        /// 1-based task ID.
         #[arg(value_name = "ID")]
         id: usize,
     },
@@ -196,168 +131,334 @@ pub enum Commands {
 
     /// Set or change recurrence pattern for a task.
     Recur {
-        /// 1-based task ID.
         #[arg(value_name = "ID")]
         id: usize,
-        /// Desired recurrence pattern.
         #[arg(value_enum)]
         pattern: Recurrence,
     },
 
     /// Remove recurrence pattern from a task.
     #[command(visible_alias = "norecur")]
-    #[command(long_about = "Remove recurrence pattern from a task\n\n\
-        Stops a task from repeating automatically. The task will remain\n\
-        but won't create new occurrences when completed.\n\n\
-        Aliases: norecur")]
     ClearRecur {
-        /// 1-based task ID.
         #[arg(value_name = "ID")]
         id: usize,
     },
 
     /// Permanently remove soft-deleted tombstones.
-    #[command(long_about = "Permanently remove soft-deleted tombstones\n\n\
-        Deleted tasks are kept as tombstones so sync can propagate deletions\n\
-        across devices. Once all devices have synced, tombstones can be purged.\n\n\
-        Examples:\n  \
-        todo purge                # remove tombstones older than 30 days\n  \
-        todo purge --days 7       # remove tombstones older than 7 days\n  \
-        todo purge --days 0       # remove all tombstones immediately\n  \
-        todo purge --dry-run      # preview without removing")]
     Purge {
-        /// Remove tombstones older than this many days (default: 30).
         #[arg(long, default_value_t = 30)]
         days: u32,
-        /// Preview what would be removed without actually removing.
         #[arg(long)]
         dry_run: bool,
-        /// Skip the confirmation prompt.
         #[arg(long, short = 'y')]
         yes: bool,
     },
 
+    /// Manage notes (documentation linked to projects, tasks, or resources).
+    #[command(subcommand)]
+    Note(NoteCommands),
+
+    /// Manage resources (external references: links, docs, assets).
+    #[command(subcommand)]
+    Resource(ResourceCommands),
+
     /// Sync tasks with a Git repository.
     #[command(subcommand)]
-    #[command(long_about = "Sync tasks with a Git repository.\n\n\
-        Subcommands:\n  \
-        todo sync init <remote>  — initialize repo and configure remote\n  \
-        todo sync push           — commit changes and push\n  \
-        todo sync pull           — pull and merge changes\n  \
-        todo sync status         — show sync state\n\n\
-        First time setup:\n  \
-        todo sync init git@github.com:user/tasks.git\n  \
-        todo sync push")]
     Sync(SyncCommands),
 }
 
-/// Subcommands for `todo sync`.
+// ── Project subcommands ───────────────────────────────────────────────────────
+
+#[derive(Subcommand)]
+pub enum ProjectCommands {
+    /// Add a new project.
+    Add(ProjectAddArgs),
+    /// List all projects.
+    List,
+    /// Show full details of a project.
+    Show {
+        #[arg(value_name = "ID")]
+        id: usize,
+    },
+    /// Edit an existing project.
+    Edit(ProjectEditArgs),
+    /// Remove a project (soft delete).
+    Remove {
+        #[arg(value_name = "ID")]
+        id: usize,
+        #[arg(long, short = 'y')]
+        yes: bool,
+    },
+}
+
+// ── ProjectAddArgs ────────────────────────────────────────────────────────────
+
+#[derive(Args)]
+pub struct ProjectAddArgs {
+    #[arg(value_name = "NAME")]
+    pub name: String,
+    #[arg(long, value_enum)]
+    pub difficulty: Option<Difficulty>,
+    #[arg(long, value_delimiter = ',')]
+    pub tech: Vec<String>,
+    #[arg(long, value_name = "DATE|EXPRESSION")]
+    pub due: Option<String>,
+}
+
+// ── ProjectEditArgs ───────────────────────────────────────────────────────────
+
+#[derive(Args)]
+pub struct ProjectEditArgs {
+    #[arg(value_name = "ID")]
+    pub id: usize,
+    #[arg(long)]
+    pub name: Option<String>,
+    #[arg(long, value_enum)]
+    pub difficulty: Option<Difficulty>,
+    /// Mark project as completed.
+    #[arg(long, conflicts_with = "undone")]
+    pub done: bool,
+    /// Mark project as pending.
+    #[arg(long, conflicts_with = "done")]
+    pub undone: bool,
+    #[arg(long, value_delimiter = ',', conflicts_with = "clear_tech")]
+    pub add_tech: Vec<String>,
+    #[arg(long, value_delimiter = ',', conflicts_with = "clear_tech")]
+    pub remove_tech: Vec<String>,
+    #[arg(long, conflicts_with_all = ["add_tech", "remove_tech"])]
+    pub clear_tech: bool,
+    #[arg(long, value_name = "DATE|EXPRESSION", conflicts_with = "clear_due")]
+    pub due: Option<String>,
+    #[arg(long, conflicts_with = "due")]
+    pub clear_due: bool,
+}
+
+// ── Note subcommands ──────────────────────────────────────────────────────────
+
+#[derive(Subcommand)]
+pub enum NoteCommands {
+    /// Add a new note.
+    Add(NoteAddArgs),
+    /// List notes with optional filters.
+    List(NoteListArgs),
+    /// Show the full content of a note.
+    Show {
+        #[arg(value_name = "ID")]
+        id: usize,
+    },
+    /// Edit an existing note.
+    Edit(NoteEditArgs),
+    /// Remove a note (soft delete).
+    Remove {
+        #[arg(value_name = "ID")]
+        id: usize,
+        #[arg(long, short = 'y')]
+        yes: bool,
+    },
+}
+
+// ── NoteAddArgs ───────────────────────────────────────────────────────────────
+
+#[derive(Args)]
+pub struct NoteAddArgs {
+    #[arg(value_name = "BODY")]
+    pub body: String,
+    #[arg(long)]
+    pub title: Option<String>,
+    #[arg(long, short = 't', value_delimiter = ',')]
+    pub tag: Vec<String>,
+    #[arg(long, short = 'l')]
+    pub language: Option<String>,
+    #[arg(long, short = 'p')]
+    pub project: Option<String>,
+    #[arg(long)]
+    pub task: Option<usize>,
+}
+
+// ── NoteListArgs ──────────────────────────────────────────────────────────────
+
+#[derive(Args)]
+pub struct NoteListArgs {
+    #[arg(long, short = 'p')]
+    pub project: Option<String>,
+    #[arg(long, short = 't')]
+    pub tag: Option<String>,
+    #[arg(long, short = 'l')]
+    pub language: Option<String>,
+}
+
+// ── NoteEditArgs ──────────────────────────────────────────────────────────────
+
+#[derive(Args)]
+pub struct NoteEditArgs {
+    #[arg(value_name = "ID")]
+    pub id: usize,
+    #[arg(long)]
+    pub body: Option<String>,
+    #[arg(long, conflicts_with = "clear_title")]
+    pub title: Option<String>,
+    #[arg(long, conflicts_with = "title")]
+    pub clear_title: bool,
+    #[arg(long, short = 'l', conflicts_with = "clear_language")]
+    pub language: Option<String>,
+    #[arg(long, conflicts_with = "language")]
+    pub clear_language: bool,
+    #[arg(long, value_delimiter = ',', conflicts_with = "clear_tags")]
+    pub add_tag: Vec<String>,
+    #[arg(long, value_delimiter = ',', conflicts_with = "clear_tags")]
+    pub remove_tag: Vec<String>,
+    #[arg(long, conflicts_with_all = ["add_tag", "remove_tag"])]
+    pub clear_tags: bool,
+    #[arg(long, short = 'p', conflicts_with = "clear_project")]
+    pub project: Option<String>,
+    #[arg(long, conflicts_with = "project")]
+    pub clear_project: bool,
+    #[arg(long, conflicts_with = "clear_task")]
+    pub task: Option<usize>,
+    #[arg(long, conflicts_with = "task")]
+    pub clear_task: bool,
+    /// Link one or more resources to this note by display ID.
+    #[arg(long, value_name = "ID", conflicts_with = "clear_resources")]
+    pub add_resource: Vec<usize>,
+    /// Unlink one or more resources from this note by display ID.
+    #[arg(long, value_name = "ID", conflicts_with = "clear_resources")]
+    pub remove_resource: Vec<usize>,
+    /// Remove all resource links from this note.
+    #[arg(long, conflicts_with_all = ["add_resource", "remove_resource"])]
+    pub clear_resources: bool,
+}
+
+// ── Resource subcommands ──────────────────────────────────────────────────────
+
+#[derive(Subcommand)]
+pub enum ResourceCommands {
+    /// Add a new resource.
+    Add(ResourceAddArgs),
+    /// List all resources.
+    List(ResourceListArgs),
+    /// Show full details of a resource.
+    Show {
+        #[arg(value_name = "ID")]
+        id: usize,
+    },
+    /// Edit an existing resource.
+    Edit(ResourceEditArgs),
+    /// Remove a resource (soft delete).
+    Remove {
+        #[arg(value_name = "ID")]
+        id: usize,
+        #[arg(long, short = 'y')]
+        yes: bool,
+    },
+}
+
+// ── ResourceAddArgs ───────────────────────────────────────────────────────────
+
+#[derive(Args)]
+pub struct ResourceAddArgs {
+    #[arg(value_name = "TITLE")]
+    pub title: String,
+    #[arg(long, short = 'u')]
+    pub url: Option<String>,
+    #[arg(long, short = 'd')]
+    pub description: Option<String>,
+    #[arg(long, short = 't', value_delimiter = ',')]
+    pub tag: Vec<String>,
+}
+
+// ── ResourceListArgs ──────────────────────────────────────────────────────────
+
+#[derive(Args)]
+pub struct ResourceListArgs {
+    #[arg(long, short = 't')]
+    pub tag: Option<String>,
+}
+
+// ── ResourceEditArgs ──────────────────────────────────────────────────────────
+
+#[derive(Args)]
+pub struct ResourceEditArgs {
+    #[arg(value_name = "ID")]
+    pub id: usize,
+    #[arg(long)]
+    pub title: Option<String>,
+    #[arg(long, short = 'u', conflicts_with = "clear_url")]
+    pub url: Option<String>,
+    #[arg(long, conflicts_with = "url")]
+    pub clear_url: bool,
+    #[arg(long, short = 'd', conflicts_with = "clear_description")]
+    pub description: Option<String>,
+    #[arg(long, conflicts_with = "description")]
+    pub clear_description: bool,
+    #[arg(long, value_delimiter = ',', conflicts_with = "clear_tags")]
+    pub add_tag: Vec<String>,
+    #[arg(long, value_delimiter = ',', conflicts_with = "clear_tags")]
+    pub remove_tag: Vec<String>,
+    #[arg(long, conflicts_with_all = ["add_tag", "remove_tag"])]
+    pub clear_tags: bool,
+}
+
+// ── Sync subcommands ──────────────────────────────────────────────────────────
+
 #[derive(Subcommand)]
 pub enum SyncCommands {
-    /// Initialize Git repo in the data directory and configure remote.
-    #[command(long_about = "Initialize sync with a Git remote.\n\n\
-        Creates a Git repository in the rustodo data directory,\n\
-        adds the remote, and makes an initial commit.\n\n\
-        Example:\n  \
-        todo sync init git@github.com:user/tasks.git")]
     Init {
-        /// Git remote URL (SSH or HTTPS).
-        ///
-        /// Examples:
-        ///   git@github.com:user/tasks.git
-        ///   <https://github.com/user/tasks.git>
         #[arg(value_name = "REMOTE")]
         remote: String,
     },
-
-    /// Commit todos.json and push to remote.
-    #[command(
-        long_about = "Commit any pending changes to todos.json and push to the remote.\n\n\
-        The commit message summarises the current task counts.\n\
-        No-ops if todos.json has not changed since the last commit.\n\n\
-        Requires: todo sync init <remote> to be run first."
-    )]
     Push,
-
-    /// Pull from remote and merge changes.
-    #[command(long_about = "Pull latest changes from the remote.\n\n\
-        Uses git pull --rebase to keep history linear.\n\
-        Semantic UUID-based merge is planned for Phase 2.\n\n\
-        Requires: todo sync init <remote> to be run first.")]
     Pull,
-
-    /// Show sync state (branch, last commit, dirty status).
     Status,
 }
 
-/// Arguments for the `add` subcommand.
+// ── AddArgs ───────────────────────────────────────────────────────────────────
+
 #[derive(Args)]
 pub struct AddArgs {
-    /// Task description text.
     #[arg(value_name = "DESCRIPTION")]
     pub text: String,
-    /// Priority level (default: medium).
     #[arg(long, value_enum, default_value_t = Priority::Medium)]
     pub priority: Priority,
-    /// Tags to attach (comma-separated or repeat flag).
     #[arg(long, short = 't', value_name = "TAG", value_delimiter = ',')]
     pub tag: Vec<String>,
-    /// Project to assign the task to.
     #[arg(long, short = 'p', value_name = "PROJECT")]
     pub project: Option<String>,
-    /// Due date — accepts natural language or YYYY-MM-DD.
-    ///
-    /// Examples: `tomorrow`, `"next friday"`, `"in 3 days"`, `2026-03-15`
     #[arg(long, value_name = "DATE|EXPRESSION")]
     pub due: Option<String>,
-    /// Recurrence pattern. Requires `--due` to be set.
     #[arg(long, value_enum)]
     pub recurrence: Option<Recurrence>,
-    /// Task IDs this task depends on (must be completed first).
     #[arg(long, value_name = "ID")]
     pub depends_on: Vec<usize>,
 }
 
-/// Arguments for the `edit` subcommand.
+// ── EditArgs ──────────────────────────────────────────────────────────────────
+
 #[derive(Args)]
 pub struct EditArgs {
-    /// 1-based task ID.
     #[arg(value_name = "ID")]
     pub id: usize,
-    /// New task description.
     #[arg(long)]
     pub text: Option<String>,
-    /// New priority level.
     #[arg(long, value_enum)]
     pub priority: Option<Priority>,
-    /// Tags to add (comma-separated or repeat flag).
     #[arg(long, value_delimiter = ',')]
     pub add_tag: Vec<String>,
-    /// Tags to remove (comma-separated or repeat flag).
     #[arg(long, value_delimiter = ',')]
     pub remove_tag: Vec<String>,
-    /// Assign task to a project.
     #[arg(long, short = 'p', conflicts_with = "clear_project")]
     pub project: Option<String>,
-    /// Remove task from its current project.
     #[arg(long, conflicts_with = "project")]
     pub clear_project: bool,
-    /// New due date - accepts natural language or YYYY-MM-DD.
     #[arg(long, value_name = "DATE|EXPRESSION")]
     pub due: Option<String>,
-    /// Remove the due date.
     #[arg(long, conflicts_with = "due")]
     pub clear_due: bool,
-    /// Remove all tags.
     #[arg(long, conflicts_with_all = ["add_tag", "remove_tag"])]
     pub clear_tags: bool,
-    /// Task IDs to add as dependencies.
     #[arg(long, value_name = "ID", conflicts_with = "clear_deps")]
     pub add_dep: Vec<usize>,
-    /// Task IDs to remove from dependencies.
     #[arg(long, value_name = "ID", conflicts_with = "clear_deps")]
     pub remove_dep: Vec<usize>,
-    /// Remove all dependencies from this task.
     #[arg(long, conflicts_with_all = ["add_dep", "remove_dep"])]
     pub clear_deps: bool,
 }
