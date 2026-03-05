@@ -11,11 +11,11 @@
 //! - Partial match in description
 
 mod helpers;
-
 use helpers::TestEnv;
 use rustodo::cli::AddArgs;
 use rustodo::commands::{add, done, search};
 use rustodo::models::{Priority, StatusFilter};
+use rustodo::storage::Storage;
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -294,11 +294,14 @@ fn test_search_with_project_filter() {
     assert!(result.is_ok());
 
     let tasks = env.load_tasks();
+    let projects = env.storage().load_projects().unwrap();
+    let backend_uuid = projects
+        .iter()
+        .find(|p| p.name == "Backend")
+        .map(|p| p.uuid);
     let backend_matches: Vec<_> = tasks
         .iter()
-        .filter(|t| {
-            t.text.to_lowercase().contains("fix bug") && t.project.as_deref() == Some("Backend")
-        })
+        .filter(|t| t.text.to_lowercase().contains("fix bug") && t.project_id == backend_uuid)
         .collect();
     assert_eq!(backend_matches.len(), 1);
 }

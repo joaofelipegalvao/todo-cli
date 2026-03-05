@@ -1,13 +1,14 @@
-//! Ratatui rendering.
+//! Ratatui rendering — lazygit-style layout.
 //!
-//! Layout:
-//! ```text
-//! ┌─ rustodo (3/7) [Pending] ──────────────┬─ Details — #1 ──────┐
-//! │  # │ P │  S  │ Task               │ Due │  Fix login bug       │
-//! │  1 │ H │ [ ] │ Fix login          │ 2d  │  Priority : High     │
-//! └────────────────────────────────────────┴─────────────────────-┘
-//! [j/k] nav  [d] done  [e] edit  [/] search  [Tab] filter  [q] quit
-//! ```
+//! Left panel  `[1]`: single box with tab bar in the title — Tasks / Projects / Tags.
+//!   `[`/`]` cycles tabs, `j`/`k` navigates within the active tab.
+//!
+//! Right panel `[0]`: single full-height box, content is contextual:
+//!   • Tasks active   → rich task details (metadata + deps + history)
+//!   • Projects active → list of tasks for selected project
+//!   • Tags active    → list of tasks for selected tag
+//!
+//! Edit/Add form replaces the right panel content when active.
 
 use chrono::Local;
 use ratatui::{
@@ -16,14 +17,14 @@ use ratatui::{
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{
-        Block, Borders, Cell, Clear, Paragraph, Row, Scrollbar, ScrollbarOrientation,
-        ScrollbarState, Table, TableState, Wrap,
+        Block, Borders, Cell, Clear, List, ListState, Paragraph, Row, Scrollbar,
+        ScrollbarOrientation, ScrollbarState, Table, Wrap,
     },
 };
 
 use crate::models::Task;
 
-use super::app::{App, EditField, FocusedPanel, Mode, PriorityFilter, RightPanel};
+use super::app::{App, EditField, FocusedPanel, LeftPanel, Mode, PriorityFilter, TreeItem};
 
 // ── palette ───────────────────────────────────────────────────────────────────
 
@@ -38,24 +39,6 @@ const COLOR_SEARCH_BG: Color = Color::Rgb(30, 30, 50);
 const COLOR_FOCUSED_BG: Color = Color::Rgb(30, 40, 60);
 const COLOR_FOCUSED_BORDER: Color = Color::Cyan;
 
-// ── column visibility ─────────────────────────────────────────────────────────
-
-struct Cols {
-    project: bool,
-    tags: bool,
-    due: bool,
-}
-
-impl Cols {
-    fn from(tasks: &[Task]) -> Self {
-        Self {
-            project: tasks.iter().any(|t| t.project.is_some()),
-            tags: tasks.iter().any(|t| !t.tags.is_empty()),
-            due: tasks.iter().any(|t| t.due_date.is_some()),
-        }
-    }
-}
-
 // ── entry point ───────────────────────────────────────────────────────────────
 
 pub fn draw(f: &mut Frame, app: &mut App) {
@@ -68,204 +51,116 @@ pub fn draw(f: &mut Frame, app: &mut App) {
 
     let cols = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])
+        .constraints([Constraint::Percentage(40), Constraint::Percentage(60)])
         .split(rows[0]);
 
-    draw_task_list(f, app, cols[0]);
-
-    // Right panel: tab bar (1 line) + content
-    let right_chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(1), Constraint::Min(1)])
-        .split(cols[1]);
-
-    draw_right_tabs(f, app, right_chunks[0]);
-
-    match app.mode {
-        Mode::EditForm => draw_edit_form(f, app, right_chunks[1], false),
-        Mode::AddForm => draw_edit_form(f, app, right_chunks[1], true),
-        _ => match app.right_panel {
-            RightPanel::Details => draw_details(f, app, right_chunks[1]),
-            RightPanel::Stats => draw_stats(f, app, right_chunks[1]),
-            RightPanel::Deps => draw_deps(f, app, right_chunks[1]),
-        },
-    }
+    draw_left_panel(f, app, cols[0]);
+    draw_right_panel(f, app, cols[1]);
 
     draw_footer(f, app, rows[1]);
 
     if app.mode == Mode::Search {
         draw_input_overlay(f, app, rows[1]);
     }
-
     if app.mode == Mode::Help {
         draw_help_popup(f, app, area);
     }
 }
 
-// ── right panel tab bar ───────────────────────────────────────────────────────
+// ── left panel — single box, tab bar in title ─────────────────────────────────
 
-fn draw_right_tabs(f: &mut Frame, app: &App, area: Rect) {
-    if matches!(app.mode, Mode::EditForm | Mode::AddForm) {
-        return;
-    }
-
-    let tabs = [RightPanel::Details, RightPanel::Stats, RightPanel::Deps];
-    let mut spans: Vec<Span> = Vec::new();
-
-    for (i, &tab) in tabs.iter().enumerate() {
-        let is_active = app.right_panel == tab;
-
-        if i > 0 {
-            spans.push(Span::styled(" - ", Style::default().fg(Color::DarkGray)));
-        }
-
-        if is_active {
-            spans.push(Span::styled(
-                format!("[{}]", tab.label()),
-                Style::default()
-                    .fg(COLOR_ACCENT)
-                    .add_modifier(Modifier::BOLD),
-            ));
-        } else {
-            spans.push(Span::styled(
-                tab.label(),
-                Style::default().fg(Color::DarkGray),
-            ));
-        }
-    }
-
-    f.render_widget(Paragraph::new(Line::from(spans)), area);
-}
-
-// ── task list ─────────────────────────────────────────────────────────────────
-
-fn draw_task_list(f: &mut Frame, app: &mut App, area: Rect) {
-    let c = Cols::from(&app.tasks);
-
-    let current = if app.filtered_indices.is_empty() {
-        0
-    } else {
-        app.selected + 1
-    };
-    let total_filtered = app.filtered_indices.len();
-    let filter_label = app.list_filter.label();
-    let title = if app.priority_filter == PriorityFilter::All {
-        format!(
-            " rustodo ({}/{}) [{}] ",
-            current, total_filtered, filter_label
-        )
-    } else {
-        format!(
-            " rustodo ({}/{}) [{} | P:{}] ",
-            current,
-            total_filtered,
-            filter_label,
-            app.priority_filter.label()
-        )
-    };
-
-    let mut header_cells = vec![
-        Cell::from("S").style(
-            Style::default()
-                .fg(Color::DarkGray)
-                .add_modifier(Modifier::BOLD),
-        ),
-        Cell::from("Task").style(
-            Style::default()
-                .fg(Color::DarkGray)
-                .add_modifier(Modifier::BOLD),
-        ),
-    ];
-    if c.project {
-        header_cells.push(
-            Cell::from("Project").style(
-                Style::default()
-                    .fg(Color::DarkGray)
-                    .add_modifier(Modifier::BOLD),
-            ),
-        );
-    }
-    if c.tags {
-        header_cells.push(
-            Cell::from("Tags").style(
-                Style::default()
-                    .fg(Color::DarkGray)
-                    .add_modifier(Modifier::BOLD),
-            ),
-        );
-    }
-    if c.due {
-        header_cells.push(
-            Cell::from("Due").style(
-                Style::default()
-                    .fg(Color::DarkGray)
-                    .add_modifier(Modifier::BOLD),
-            ),
-        );
-    }
-    let header = Row::new(header_cells).height(1);
-
-    let rows: Vec<Row> = app
-        .filtered_indices
-        .iter()
-        .map(|&real_idx| task_row(&app.tasks[real_idx], &app.tasks, &c))
-        .collect();
-
-    let mut widths = vec![
-        Constraint::Length(3), // status P/B/D
-        Constraint::Min(10),   // task text
-    ];
-    if c.project {
-        widths.push(Constraint::Length(12));
-    }
-    if c.tags {
-        widths.push(Constraint::Length(12));
-    }
-    if c.due {
-        widths.push(Constraint::Length(8));
-    }
-
-    let mut state = TableState::default();
-    if !app.filtered_indices.is_empty() {
-        state.select(Some(app.selected));
-    }
-
-    let border_style = if app.focused_panel == FocusedPanel::Left {
+fn draw_left_panel(f: &mut Frame, app: &mut App, area: Rect) {
+    let is_focused = app.focused_panel == FocusedPanel::Left;
+    let border_style = if is_focused {
         Style::default().fg(COLOR_ACCENT)
     } else {
         Style::default().fg(Color::DarkGray)
     };
 
-    let table = Table::new(rows, widths)
-        .header(header)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title(title)
-                .border_style(border_style),
-        )
-        .row_highlight_style(
-            Style::default()
-                .bg(COLOR_SELECTED_BG)
-                .add_modifier(Modifier::BOLD),
-        )
-        .column_spacing(1);
+    // Title: [1]-Tasks - Projects - Tags  (active tab highlighted)
+    let tabs = [LeftPanel::Tasks, LeftPanel::Projects, LeftPanel::Tags];
+    let mut title_spans: Vec<Span> = vec![
+        Span::styled("[1]", Style::default().fg(Color::DarkGray)),
+        Span::styled("─", Style::default().fg(Color::DarkGray)),
+    ];
+    for (i, &tab) in tabs.iter().enumerate() {
+        if i > 0 {
+            title_spans.push(Span::styled(" - ", Style::default().fg(Color::DarkGray)));
+        }
+        if tab == app.left_panel {
+            title_spans.push(Span::styled(
+                tab.label(),
+                Style::default()
+                    .fg(COLOR_ACCENT)
+                    .add_modifier(Modifier::BOLD),
+            ));
+        } else {
+            title_spans.push(Span::styled(
+                tab.label(),
+                Style::default().fg(Color::DarkGray),
+            ));
+        }
+    }
+    title_spans.push(Span::raw(" "));
 
-    f.render_stateful_widget(table, area, &mut state);
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .title(Line::from(title_spans))
+        .border_style(border_style);
+
+    match app.left_panel {
+        LeftPanel::Tasks => draw_tasks_tab(f, app, block, area),
+        LeftPanel::Projects => draw_projects_tree(f, app, block, area),
+        LeftPanel::Tags => draw_tags_list(f, app, block, area),
+    }
 }
 
-fn task_row<'a>(task: &'a Task, all_tasks: &'a [Task], c: &Cols) -> Row<'a> {
-    let blocked = !task.completed && task.is_blocked(all_tasks);
+// ── Tasks tab ─────────────────────────────────────────────────────────────────
 
-    let row_style = if task.completed {
-        Style::default().fg(COLOR_DONE)
-    } else if blocked {
-        Style::default().fg(COLOR_BLOCKED)
+fn draw_tasks_tab(f: &mut Frame, app: &mut App, block: Block, area: Rect) {
+    let current = if app.filtered_indices.is_empty() {
+        0
     } else {
-        Style::default().fg(Color::White)
+        app.selected + 1
+    };
+    let total = app.filtered_indices.len();
+    let counter = if app.priority_filter == PriorityFilter::All {
+        format!(" ({}/{}) [{}] ", current, total, app.list_filter.label())
+    } else {
+        format!(
+            " ({}/{}) [{} | P:{}] ",
+            current,
+            total,
+            app.list_filter.label(),
+            app.priority_filter.label()
+        )
     };
 
-    // Status: single letter colored — P/B/D like lazygit M/A/D
+    let lines: Vec<Line> = app
+        .filtered_indices
+        .iter()
+        .map(|&i| task_line(&app.tasks[i], &app.tasks))
+        .collect();
+
+    let mut state = ListState::default();
+    if !app.filtered_indices.is_empty() {
+        state.select(Some(app.selected));
+    }
+
+    let block = block.title_bottom(Span::styled(counter, Style::default().fg(Color::DarkGray)));
+
+    let list = List::new(lines).block(block).highlight_style(
+        Style::default()
+            .bg(COLOR_SELECTED_BG)
+            .add_modifier(Modifier::BOLD),
+    );
+
+    f.render_stateful_widget(list, area, &mut state);
+}
+
+fn task_line<'a>(task: &'a Task, all_tasks: &'a [Task]) -> Line<'a> {
+    let blocked = !task.completed && task.is_blocked(all_tasks);
+
     let (status_text, status_color) = if task.completed {
         ("D", Color::Green)
     } else if blocked {
@@ -273,61 +168,178 @@ fn task_row<'a>(task: &'a Task, all_tasks: &'a [Task], c: &Cols) -> Row<'a> {
     } else {
         ("P", Color::Blue)
     };
-    let s_cell = Cell::from(status_text).style(Style::default().fg(status_color));
 
-    let text_cell = Cell::from(truncate(&task.text, 36)).style(row_style);
-    let mut cells = vec![s_cell, text_cell];
-
-    if c.project {
-        let proj = task.project.as_deref().unwrap_or("");
-        let proj_style = if task.completed {
-            Style::default().fg(COLOR_DONE).add_modifier(Modifier::BOLD)
-        } else {
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD)
-        };
-        cells.push(Cell::from(truncate(proj, 11)).style(proj_style));
-    }
-    if c.tags {
-        let tags = if task.tags.is_empty() {
-            String::new()
-        } else {
-            truncate(&task.tags.join(", "), 11)
-        };
-        let tags_style = if task.completed {
-            Style::default().fg(COLOR_DONE).add_modifier(Modifier::BOLD)
-        } else {
-            Style::default()
-                .fg(COLOR_ACCENT)
-                .add_modifier(Modifier::BOLD)
-        };
-        cells.push(Cell::from(tags).style(tags_style));
-    }
-    if c.due {
-        cells.push(
-            Cell::from(due_display(task)).style(due_style(task).add_modifier(Modifier::BOLD)),
-        );
-    }
-
-    Row::new(cells).style(row_style).height(1)
-}
-
-// ── details panel ─────────────────────────────────────────────────────────────
-
-fn draw_details(f: &mut Frame, app: &App, area: Rect) {
-    let content: Vec<Line> = match app.selected_task() {
-        None => vec![Line::from(Span::styled(
-            "No tasks",
-            Style::default().fg(Color::DarkGray),
-        ))],
-        Some(task) => build_details(task, &app.tasks),
+    let text_style = if task.completed {
+        Style::default().fg(COLOR_DONE)
+    } else if blocked {
+        Style::default().fg(COLOR_BLOCKED)
+    } else {
+        Style::default().fg(Color::White)
     };
 
-    let inner_height = area.height.saturating_sub(2) as usize;
-    let content_len = content.len();
-    let max_scroll = content_len.saturating_sub(inner_height);
-    let scroll = app.details_scroll.min(max_scroll);
+    Line::from(vec![
+        Span::raw(" "),
+        Span::styled(status_text, Style::default().fg(status_color)),
+        Span::raw("  "),
+        Span::styled(task.text.clone(), text_style),
+    ])
+}
+
+// ── Projects tree tab ─────────────────────────────────────────────────────────
+
+fn draw_projects_tree(f: &mut Frame, app: &App, block: Block, area: Rect) {
+    if app.project_tree.is_empty() {
+        f.render_widget(
+            Paragraph::new("No projects")
+                .style(Style::default().fg(Color::DarkGray))
+                .block(block),
+            area,
+        );
+        return;
+    }
+
+    let lines: Vec<Line> = app
+        .project_tree
+        .iter()
+        .enumerate()
+        .map(|(i, item)| {
+            let is_selected = i == app.tree_selected;
+            match item {
+                TreeItem::Project {
+                    name,
+                    task_count,
+                    expanded,
+                } => {
+                    let arrow = if *expanded { "▼ " } else { "▶ " };
+                    let label = name.as_deref().unwrap_or_default();
+                    let count_str = format!(
+                        "  {} task{}",
+                        task_count,
+                        if *task_count == 1 { "" } else { "s" }
+                    );
+                    let (name_color, arrow_color) = if is_selected {
+                        (Color::White, COLOR_ACCENT)
+                    } else {
+                        (Color::Magenta, Color::DarkGray)
+                    };
+                    Line::from(vec![
+                        Span::raw(" "),
+                        Span::styled(arrow, Style::default().fg(arrow_color)),
+                        Span::styled(
+                            label.to_string(),
+                            Style::default().fg(name_color).add_modifier(Modifier::BOLD),
+                        ),
+                        Span::styled(count_str, Style::default().fg(Color::DarkGray)),
+                    ])
+                }
+                TreeItem::Task { task_idx } => {
+                    let task = &app.tasks[*task_idx];
+                    let blocked = !task.completed && task.is_blocked(&app.tasks);
+                    let text_style = if task.completed {
+                        Style::default().fg(COLOR_DONE)
+                    } else if blocked {
+                        Style::default().fg(COLOR_BLOCKED)
+                    } else {
+                        Style::default().fg(Color::White)
+                    };
+                    Line::from(vec![
+                        Span::raw("    "),
+                        Span::styled(task.text.clone(), text_style),
+                    ])
+                }
+            }
+        })
+        .collect();
+
+    // Counter shows only named projects
+    let project_count = app
+        .project_tree
+        .iter()
+        .filter(|i| matches!(i, TreeItem::Project { name, .. } if name.is_some()))
+        .count();
+    let current_project = app.project_tree[..=app.tree_selected]
+        .iter()
+        .filter(|i| matches!(i, TreeItem::Project { name, .. } if name.is_some()))
+        .count();
+    let counter = format!(" {}/{} ", current_project.max(1), project_count);
+    let block = block.title_bottom(Span::styled(counter, Style::default().fg(Color::DarkGray)));
+
+    let mut state = ListState::default();
+    state.select(Some(app.tree_selected));
+
+    let list = List::new(lines).block(block).highlight_style(
+        Style::default()
+            .bg(COLOR_SELECTED_BG)
+            .add_modifier(Modifier::BOLD),
+    );
+
+    f.render_stateful_widget(list, area, &mut state);
+}
+
+// ── Tags list tab ─────────────────────────────────────────────────────────────
+
+fn draw_tags_list(f: &mut Frame, app: &App, block: Block, area: Rect) {
+    let items = app.tags_list();
+
+    if items.is_empty() {
+        f.render_widget(
+            Paragraph::new("No tags")
+                .style(Style::default().fg(Color::DarkGray))
+                .block(block),
+            area,
+        );
+        return;
+    }
+
+    let lines: Vec<Line> = items
+        .iter()
+        .map(|name| {
+            let count = app.tasks.iter().filter(|t| t.tags.contains(name)).count();
+            Line::from(vec![
+                Span::raw(" "),
+                Span::styled(
+                    name.clone(),
+                    Style::default()
+                        .fg(COLOR_ACCENT)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(
+                    format!("  {} task{}", count, if count == 1 { "" } else { "s" }),
+                    Style::default().fg(Color::DarkGray),
+                ),
+            ])
+        })
+        .collect();
+
+    let counter = format!(" {}/{} ", app.left_selected + 1, items.len());
+    let block = block.title_bottom(Span::styled(counter, Style::default().fg(Color::DarkGray)));
+
+    let mut state = ListState::default();
+    state.select(Some(app.left_selected));
+
+    let list = List::new(lines).block(block).highlight_style(
+        Style::default()
+            .bg(COLOR_SELECTED_BG)
+            .add_modifier(Modifier::BOLD),
+    );
+
+    f.render_stateful_widget(list, area, &mut state);
+}
+
+// ── right panel — contextual ──────────────────────────────────────────────────
+
+fn draw_right_panel(f: &mut Frame, app: &mut App, area: Rect) {
+    match app.mode {
+        Mode::EditForm => {
+            draw_edit_form(f, app, area, false);
+            return;
+        }
+        Mode::AddForm => {
+            draw_edit_form(f, app, area, true);
+            return;
+        }
+        _ => {}
+    }
 
     let border_style = if app.focused_panel == FocusedPanel::Right {
         Style::default().fg(COLOR_ACCENT)
@@ -335,10 +347,60 @@ fn draw_details(f: &mut Frame, app: &App, area: Rect) {
         Style::default().fg(Color::DarkGray)
     };
 
+    match app.left_panel {
+        LeftPanel::Tasks => draw_task_details(f, app, area, border_style),
+        LeftPanel::Projects => draw_tree_details(f, app, area, border_style),
+        LeftPanel::Tags => draw_context_panel(f, app, area, border_style, true),
+    }
+}
+
+// ── [0] task details — rich single view ──────────────────────────────────────
+
+fn draw_task_details(f: &mut Frame, app: &App, area: Rect, border_style: Style) {
+    let title = match app.selected_task() {
+        None => right_title("No task selected"),
+        Some(task) => {
+            let id = app.selected_visible_id().unwrap_or(0);
+            let prefix_len = format!("[0]─ Task #{}: ", id).len();
+            let max_text = (area.width as usize).saturating_sub(prefix_len + 2);
+            Line::from(vec![
+                Span::styled("[0]", Style::default().fg(Color::DarkGray)),
+                Span::styled("─ Task #", Style::default().fg(Color::DarkGray)),
+                Span::styled(
+                    format!("{}", id),
+                    Style::default()
+                        .fg(COLOR_ACCENT)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(": ", Style::default().fg(Color::DarkGray)),
+                Span::styled(
+                    truncate(&task.text, max_text),
+                    Style::default()
+                        .fg(Color::White)
+                        .add_modifier(Modifier::BOLD),
+                ),
+            ])
+        }
+    };
+
+    let content = match app.selected_task() {
+        None => vec![Line::from(Span::styled(
+            "No tasks",
+            Style::default().fg(Color::DarkGray),
+        ))],
+        Some(task) => build_task_details(task, &app.tasks, app.project_name_for(task)),
+    };
+
+    let inner_height = area.height.saturating_sub(2) as usize;
+    let content_len = content.len();
+    let max_scroll = content_len.saturating_sub(inner_height);
+    let scroll = app.details_scroll.min(max_scroll);
+
     let para = Paragraph::new(content)
         .block(
             Block::default()
                 .borders(Borders::ALL)
+                .title(title)
                 .border_style(border_style),
         )
         .wrap(Wrap { trim: true })
@@ -357,97 +419,521 @@ fn draw_details(f: &mut Frame, app: &App, area: Rect) {
     }
 }
 
-fn build_details(task: &Task, all_tasks: &[Task]) -> Vec<Line<'static>> {
-    let label = |s: &str| Span::styled(format!("{:<10}", s), Style::default().fg(Color::DarkGray));
-    let value = |s: String| Span::styled(s, Style::default().fg(Color::White));
-    let accent = |s: String| Span::styled(s, Style::default().fg(COLOR_ACCENT));
+fn sep() -> Line<'static> {
+    Line::from(Span::styled(
+        "─────────────────────────────────────",
+        Style::default().fg(Color::Rgb(50, 50, 50)),
+    ))
+}
 
-    let mut lines: Vec<Line> = vec![
-        Line::from(Span::styled(
-            task.text.clone(),
-            Style::default()
-                .fg(Color::White)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(""),
-        Line::from(vec![
-            label("Priority"),
-            match task.priority {
-                crate::models::Priority::High => Span::styled(
-                    "High",
-                    Style::default().fg(COLOR_HIGH).add_modifier(Modifier::BOLD),
-                ),
-                crate::models::Priority::Medium => {
-                    Span::styled("Medium", Style::default().fg(COLOR_MEDIUM))
-                }
-                crate::models::Priority::Low => Span::styled("Low", Style::default().fg(COLOR_LOW)),
-            },
-        ]),
-        Line::from(vec![
-            label("Status"),
-            if task.completed {
-                Span::styled("Done", Style::default().fg(COLOR_DONE))
-            } else {
-                Span::styled("Pending", Style::default().fg(Color::Green))
-            },
-        ]),
-    ];
+fn build_task_details(
+    task: &Task,
+    all_tasks: &[Task],
+    project_name: Option<&str>,
+) -> Vec<Line<'static>> {
+    let mut lines: Vec<Line> = Vec::new();
 
-    if let Some(ref p) = task.project {
-        lines.push(Line::from(vec![label("Project"), accent(p.clone())]));
-    }
-    if !task.tags.is_empty() {
-        lines.push(Line::from(vec![label("Tags"), value(task.tags.join(", "))]));
-    }
-    if let Some(due) = task.due_date {
-        lines.push(Line::from(vec![
-            label("Due"),
-            value(due.format("%Y-%m-%d").to_string()),
-        ]));
-    }
-    if let Some(rec) = task.recurrence {
-        lines.push(Line::from(vec![label("Recurs"), value(format!("{}", rec))]));
-    }
-    if !task.depends_on.is_empty() {
-        let visible: Vec<&Task> = all_tasks.iter().filter(|t| !t.is_deleted()).collect();
-        let dep_labels: Vec<String> = task
-            .depends_on
-            .iter()
-            .filter_map(|dep_uuid| {
-                let pos = visible.iter().position(|t| t.uuid == *dep_uuid)?;
-                Some(format!("#{}", pos + 1))
-            })
-            .collect();
-        let blocked = task.is_blocked(all_tasks);
-        lines.push(Line::from(vec![
-            label("Deps"),
-            Span::styled(
-                dep_labels.join(", "),
-                if blocked {
-                    Style::default().fg(Color::Red)
-                } else {
-                    Style::default().fg(Color::White)
-                },
-            ),
-        ]));
-    }
+    // ── Metadata ─────────────────────────────────────────────────────────────
+    lines.push(sep());
+
+    let lbl = |s: &str| Span::styled(format!("{:<10}", s), Style::default().fg(Color::DarkGray));
+
+    // Priority + Status
+    let priority_span = match task.priority {
+        crate::models::Priority::High => Span::styled(
+            format!("{:<14}", "High"),
+            Style::default().fg(COLOR_HIGH).add_modifier(Modifier::BOLD),
+        ),
+        crate::models::Priority::Medium => Span::styled(
+            format!("{:<14}", "Medium"),
+            Style::default().fg(COLOR_MEDIUM),
+        ),
+        crate::models::Priority::Low => {
+            Span::styled(format!("{:<14}", "Low"), Style::default().fg(COLOR_LOW))
+        }
+    };
+    let status_span = if task.completed {
+        Span::styled("Done", Style::default().fg(COLOR_DONE))
+    } else if task.is_blocked(all_tasks) {
+        Span::styled(
+            "Blocked",
+            Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+        )
+    } else {
+        Span::styled("Pending", Style::default().fg(Color::Green))
+    };
     lines.push(Line::from(vec![
-        label("Created"),
-        value(task.created_at.format("%Y-%m-%d").to_string()),
+        lbl("Priority"),
+        priority_span,
+        lbl("Status"),
+        status_span,
     ]));
+
+    // Project + Due
+    let has_project = project_name.is_some();
+    let has_due = task.due_date.is_some();
+    if has_project || has_due {
+        let proj_val = Span::styled(
+            format!("{:<14}", project_name.unwrap_or("")),
+            Style::default()
+                .fg(Color::Magenta)
+                .add_modifier(Modifier::BOLD),
+        );
+        let due_str = task
+            .due_date
+            .map(|d| {
+                let today = Local::now().naive_local().date();
+                let days = (d - today).num_days();
+                let suffix = match days {
+                    d if d < 0 => format!(" ({}d late)", d.abs()),
+                    0 => " (today)".into(),
+                    d if d <= 7 => format!(" ({}d)", d),
+                    _ => String::new(),
+                };
+                format!("{}{}", d.format("%Y-%m-%d"), suffix)
+            })
+            .unwrap_or_default();
+        let due_color = task
+            .due_date
+            .map(|d| {
+                let today = Local::now().naive_local().date();
+                match (d - today).num_days() {
+                    d if d < 0 => Color::Red,
+                    d if d <= 7 => Color::Yellow,
+                    _ => Color::White,
+                }
+            })
+            .unwrap_or(Color::White);
+
+        lines.push(Line::from(vec![
+            lbl(if has_project { "Project" } else { "" }),
+            if has_project {
+                proj_val
+            } else {
+                Span::raw(format!("{:<14}", ""))
+            },
+            lbl(if has_due { "Due" } else { "" }),
+            Span::styled(due_str, Style::default().fg(due_color)),
+        ]));
+    }
+
+    // Tags + Created
+    let tags_str = if task.tags.is_empty() {
+        String::new()
+    } else {
+        task.tags.join(", ")
+    };
+    lines.push(Line::from(vec![
+        lbl(if !tags_str.is_empty() { "Tags" } else { "" }),
+        Span::styled(
+            format!("{:<14}", truncate(&tags_str, 13)),
+            Style::default().fg(COLOR_ACCENT),
+        ),
+        lbl("Created"),
+        Span::styled(
+            task.created_at.format("%Y-%m-%d").to_string(),
+            Style::default().fg(Color::White),
+        ),
+    ]));
+
+    // Recurrence
+    if let Some(rec) = task.recurrence {
+        lines.push(Line::from(vec![
+            lbl("Recurs"),
+            Span::styled(format!("{}", rec), Style::default().fg(Color::Cyan)),
+        ]));
+    }
+
+    // Completed at
     if task.completed
         && let Some(done_at) = task.completed_at
     {
         lines.push(Line::from(vec![
-            label("Completed"),
-            value(done_at.format("%Y-%m-%d").to_string()),
+            lbl("Completed"),
+            Span::styled(
+                done_at.format("%Y-%m-%d").to_string(),
+                Style::default().fg(COLOR_DONE),
+            ),
         ]));
+    }
+
+    // ── Dependencies ─────────────────────────────────────────────────────────
+    let visible: Vec<&Task> = all_tasks.iter().filter(|t| !t.is_deleted()).collect();
+
+    if !task.depends_on.is_empty() {
+        lines.push(Line::from(""));
+        lines.push(sep());
+        lines.push(Line::from(Span::styled(
+            "Dependencies",
+            Style::default()
+                .fg(Color::White)
+                .add_modifier(Modifier::BOLD),
+        )));
+        for dep_uuid in &task.depends_on {
+            if let Some(pos) = visible.iter().position(|t| t.uuid == *dep_uuid) {
+                let dep = visible[pos];
+                let done = dep.completed;
+                lines.push(Line::from(vec![
+                    Span::styled(
+                        if done {
+                            "  └── [x] "
+                        } else {
+                            "  └── [ ] "
+                        },
+                        Style::default().fg(if done { Color::Green } else { Color::Red }),
+                    ),
+                    Span::styled(format!("#{}", pos + 1), Style::default().fg(COLOR_ACCENT)),
+                    Span::raw("  "),
+                    Span::styled(
+                        truncate(&dep.text, 25),
+                        Style::default().fg(if done { COLOR_DONE } else { Color::White }),
+                    ),
+                    if !done {
+                        Span::styled("  (blocking you)", Style::default().fg(Color::Red))
+                    } else {
+                        Span::raw("")
+                    },
+                ]));
+            }
+        }
+    }
+
+    // ── Required by ───────────────────────────────────────────────────────────
+    let downstream: Vec<(usize, &Task)> = visible
+        .iter()
+        .enumerate()
+        .filter(|(_, t)| t.depends_on.contains(&task.uuid))
+        .map(|(i, t)| (i, *t))
+        .collect();
+
+    if !downstream.is_empty() {
+        lines.push(Line::from(""));
+        lines.push(sep());
+        lines.push(Line::from(Span::styled(
+            "Required by",
+            Style::default()
+                .fg(Color::White)
+                .add_modifier(Modifier::BOLD),
+        )));
+        for (pos, dep) in &downstream {
+            let done = dep.completed;
+            lines.push(Line::from(vec![
+                Span::styled(
+                    if done {
+                        "  └── [x] "
+                    } else {
+                        "  └── [ ] "
+                    },
+                    Style::default().fg(if done { Color::Green } else { Color::Yellow }),
+                ),
+                Span::styled(format!("#{}", pos + 1), Style::default().fg(COLOR_ACCENT)),
+                Span::raw("  "),
+                Span::styled(
+                    truncate(&dep.text, 25),
+                    Style::default().fg(if done { COLOR_DONE } else { Color::White }),
+                ),
+                if !done {
+                    Span::styled("  (waiting on you)", Style::default().fg(Color::Yellow))
+                } else {
+                    Span::raw("")
+                },
+            ]));
+        }
     }
 
     lines
 }
 
-// ── edit form panel ───────────────────────────────────────────────────────────
+// ── [0] tree details — always shows project summary ──────────────────────────
+
+fn draw_tree_details(f: &mut Frame, app: &App, area: Rect, border_style: Style) {
+    // Find the project name for whatever is currently selected
+    // (walk backwards from tree_selected to find the parent project header)
+    let project_name: Option<Option<&str>> = {
+        let mut name = None;
+        for item in app.project_tree[..=app
+            .tree_selected
+            .min(app.project_tree.len().saturating_sub(1))]
+            .iter()
+            .rev()
+        {
+            if let TreeItem::Project { name: n, .. } = item {
+                name = Some(n.as_deref());
+                break;
+            }
+        }
+        name
+    };
+
+    let Some(proj_key) = project_name else {
+        f.render_widget(
+            Paragraph::new("").block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(right_title("Projects"))
+                    .border_style(border_style),
+            ),
+            area,
+        );
+        return;
+    };
+
+    let label = proj_key.unwrap_or("");
+    let proj_uuid = app
+        .projects
+        .iter()
+        .find(|p| Some(p.name.as_str()) == proj_key && !p.is_deleted())
+        .map(|p| p.uuid);
+    let tasks: Vec<&Task> = app
+        .tasks
+        .iter()
+        .filter(|t| proj_uuid.is_some() && t.project_id == proj_uuid)
+        .collect();
+    let pending = tasks.iter().filter(|t| !t.completed).count();
+    let done = tasks.iter().filter(|t| t.completed).count();
+    let blocked = tasks
+        .iter()
+        .filter(|t| {
+            !t.completed
+                && t.depends_on
+                    .iter()
+                    .any(|dep| app.tasks.iter().any(|t2| t2.uuid == *dep && !t2.completed))
+        })
+        .count();
+
+    let mut lines: Vec<Line> = vec![
+        Line::from(vec![
+            Span::styled(
+                format!("{} tasks", tasks.len()),
+                Style::default()
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled("  ·  ", Style::default().fg(Color::DarkGray)),
+            Span::styled(
+                format!("{} pending", pending),
+                Style::default().fg(Color::Blue),
+            ),
+            if blocked > 0 {
+                Span::styled(
+                    format!("  ·  {} blocked", blocked),
+                    Style::default().fg(Color::Red),
+                )
+            } else {
+                Span::raw("")
+            },
+            Span::styled("  ·  ", Style::default().fg(Color::DarkGray)),
+            Span::styled(format!("{} done", done), Style::default().fg(Color::Green)),
+        ]),
+        Line::from(""),
+        sep(),
+        Line::from(""),
+    ];
+
+    for task in &tasks {
+        let is_blocked = !task.completed
+            && task
+                .depends_on
+                .iter()
+                .any(|dep| app.tasks.iter().any(|t2| t2.uuid == *dep && !t2.completed));
+        let text_style = if task.completed {
+            Style::default().fg(COLOR_DONE)
+        } else if is_blocked {
+            Style::default().fg(COLOR_BLOCKED)
+        } else {
+            Style::default().fg(Color::White)
+        };
+        let pri = match task.priority {
+            crate::models::Priority::High => Span::styled("H  ", Style::default().fg(COLOR_HIGH)),
+            crate::models::Priority::Medium => {
+                Span::styled("M  ", Style::default().fg(COLOR_MEDIUM))
+            }
+            crate::models::Priority::Low => Span::styled("L  ", Style::default().fg(COLOR_LOW)),
+        };
+        lines.push(Line::from(vec![
+            pri,
+            Span::styled(task.text.clone(), text_style),
+        ]));
+    }
+
+    f.render_widget(
+        Paragraph::new(lines)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(right_title(&format!("Project: {}", label)))
+                    .border_style(border_style),
+            )
+            .wrap(Wrap { trim: false }),
+        area,
+    );
+}
+
+fn draw_context_panel(f: &mut Frame, app: &App, area: Rect, border_style: Style, is_tags: bool) {
+    let (label, tasks): (String, Vec<&Task>) = if is_tags {
+        let tags = app.tags_list();
+        match tags.get(app.left_selected) {
+            Some(tag) => (format!("Tag: {}", tag), app.tasks_for_selected_tag()),
+            None => {
+                f.render_widget(
+                    Paragraph::new("No tag selected").block(
+                        Block::default()
+                            .borders(Borders::ALL)
+                            .title(right_title("Tag"))
+                            .border_style(border_style),
+                    ),
+                    area,
+                );
+                return;
+            }
+        }
+    } else {
+        let projects = app.projects_list();
+        match projects.get(app.left_selected) {
+            Some(proj) => (
+                format!("Project: {}", proj),
+                app.tasks_for_selected_project(),
+            ),
+            None => {
+                f.render_widget(
+                    Paragraph::new("No project selected").block(
+                        Block::default()
+                            .borders(Borders::ALL)
+                            .title(right_title("Project"))
+                            .border_style(border_style),
+                    ),
+                    area,
+                );
+                return;
+            }
+        }
+    };
+
+    let pending = tasks.iter().filter(|t| !t.completed).count();
+    let done = tasks.iter().filter(|t| t.completed).count();
+    let blocked = tasks
+        .iter()
+        .filter(|t| {
+            !t.completed
+                && t.depends_on.iter().any(|dep_uuid| {
+                    app.tasks
+                        .iter()
+                        .any(|t2| t2.uuid == *dep_uuid && !t2.completed)
+                })
+        })
+        .count();
+
+    let mut lines: Vec<Line> = Vec::new();
+
+    lines.push(Line::from(vec![
+        Span::styled(
+            format!("{} tasks", tasks.len()),
+            Style::default()
+                .fg(Color::White)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled("  ·  ", Style::default().fg(Color::DarkGray)),
+        Span::styled(
+            format!("{} pending", pending),
+            Style::default().fg(Color::Blue),
+        ),
+        if blocked > 0 {
+            Span::styled(
+                format!("  ·  {} blocked", blocked),
+                Style::default().fg(Color::Red),
+            )
+        } else {
+            Span::raw("")
+        },
+        Span::styled("  ·  ", Style::default().fg(Color::DarkGray)),
+        Span::styled(format!("{} done", done), Style::default().fg(Color::Green)),
+    ]));
+    lines.push(Line::from(""));
+    lines.push(sep());
+    lines.push(Line::from(""));
+
+    for task in &tasks {
+        let is_blocked = !task.completed
+            && task.depends_on.iter().any(|dep_uuid| {
+                app.tasks
+                    .iter()
+                    .any(|t2| t2.uuid == *dep_uuid && !t2.completed)
+            });
+        let (s, s_color) = if task.completed {
+            ("D", Color::Green)
+        } else if is_blocked {
+            ("B", Color::Red)
+        } else {
+            ("P", Color::Blue)
+        };
+        let extra = if is_tags {
+            app.project_name_for(task).unwrap_or("").to_string()
+        } else {
+            task.tags.join(", ")
+        };
+        lines.push(Line::from(vec![
+            Span::styled(format!("{} ", s), Style::default().fg(s_color)),
+            Span::styled(truncate(&task.text, 28), Style::default().fg(Color::White)),
+            Span::raw("  "),
+            Span::styled(
+                match task.priority {
+                    crate::models::Priority::High => "H",
+                    crate::models::Priority::Medium => "M",
+                    crate::models::Priority::Low => "L",
+                },
+                Style::default().fg(match task.priority {
+                    crate::models::Priority::High => COLOR_HIGH,
+                    crate::models::Priority::Medium => COLOR_MEDIUM,
+                    crate::models::Priority::Low => COLOR_LOW,
+                }),
+            ),
+            Span::raw("  "),
+            Span::styled(
+                truncate(&extra, 12),
+                Style::default()
+                    .fg(if is_tags {
+                        Color::Magenta
+                    } else {
+                        COLOR_ACCENT
+                    })
+                    .add_modifier(Modifier::BOLD),
+            ),
+        ]));
+    }
+
+    let inner_height = area.height.saturating_sub(2) as usize;
+    let content_len = lines.len();
+    let max_scroll = content_len.saturating_sub(inner_height);
+    let scroll = app.details_scroll.min(max_scroll);
+
+    f.render_widget(
+        Paragraph::new(lines)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(right_title(&label))
+                    .border_style(border_style),
+            )
+            .wrap(Wrap { trim: false })
+            .scroll((scroll as u16, 0)),
+        area,
+    );
+}
+
+fn right_title(label: &str) -> Line<'static> {
+    Line::from(vec![
+        Span::styled("[0]", Style::default().fg(Color::DarkGray)),
+        Span::styled("─ ", Style::default().fg(Color::DarkGray)),
+        Span::styled(
+            label.to_string(),
+            Style::default()
+                .fg(Color::White)
+                .add_modifier(Modifier::BOLD),
+        ),
+    ])
+}
+
+// ── edit / add form ───────────────────────────────────────────────────────────
 
 fn draw_edit_form(f: &mut Frame, app: &App, area: Rect, is_add: bool) {
     let form = match &app.edit_form {
@@ -456,9 +942,12 @@ fn draw_edit_form(f: &mut Frame, app: &App, area: Rect, is_add: bool) {
     };
 
     let title = if is_add {
-        " New Task ".to_string()
+        right_title("New Task")
     } else {
-        format!(" Edit — #{} ", app.selected_visible_id().unwrap_or(0))
+        right_title(&format!(
+            "Edit — #{}",
+            app.selected_visible_id().unwrap_or(0)
+        ))
     };
 
     let all_fields = [
@@ -470,19 +959,18 @@ fn draw_edit_form(f: &mut Frame, app: &App, area: Rect, is_add: bool) {
         EditField::Tags,
         EditField::Deps,
     ];
-    let fields: &[EditField] = &all_fields;
 
-    let inner = Block::default().borders(Borders::ALL).title(title);
-    let inner_area = inner.inner(area);
-    f.render_widget(inner, area);
+    let outer = Block::default().borders(Borders::ALL).title(title);
+    let inner_area = outer.inner(area);
+    f.render_widget(outer, area);
 
-    let constraints: Vec<Constraint> = fields.iter().map(|_| Constraint::Length(3)).collect();
+    let constraints: Vec<Constraint> = all_fields.iter().map(|_| Constraint::Length(3)).collect();
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints(constraints)
         .split(inner_area);
 
-    for (i, &field) in fields.iter().enumerate() {
+    for (i, &field) in all_fields.iter().enumerate() {
         let chunk = chunks[i];
         let focused = form.focused == field;
 
@@ -493,13 +981,11 @@ fn draw_edit_form(f: &mut Frame, app: &App, area: Rect, is_add: bool) {
         } else {
             Style::default().fg(Color::DarkGray)
         };
-
         let input_bg = if focused {
             COLOR_FOCUSED_BG
         } else {
             Color::Reset
         };
-
         let label_line = Line::from(Span::styled(format!(" {} ", field.label()), label_style));
 
         let input_line = if field == EditField::Priority {
@@ -526,29 +1012,29 @@ fn draw_edit_form(f: &mut Frame, app: &App, area: Rect, is_add: bool) {
                         .add_modifier(Modifier::BOLD | Modifier::REVERSED),
                 ),
             };
-            let arrow_style = if focused {
+            let arrow = if focused {
                 Style::default().fg(COLOR_ACCENT)
             } else {
                 Style::default().fg(Color::DarkGray)
             };
             Line::from(vec![
-                Span::styled(" ◀ ", arrow_style),
+                Span::styled(" ◀ ", arrow),
                 Span::styled(" High ", h_s),
                 Span::raw("  "),
                 Span::styled(" Medium ", m_s),
                 Span::raw("  "),
                 Span::styled(" Low ", l_s),
-                Span::styled(" ▶ ", arrow_style),
+                Span::styled(" ▶ ", arrow),
             ])
         } else if field == EditField::Recurrence {
             let options = ["None", "Daily", "Weekly", "Monthly"];
             let current = form.recurrence_label();
-            let arrow_style = if focused {
+            let arrow = if focused {
                 Style::default().fg(COLOR_ACCENT)
             } else {
                 Style::default().fg(Color::DarkGray)
             };
-            let mut spans = vec![Span::styled(" ◀ ", arrow_style)];
+            let mut spans = vec![Span::styled(" ◀ ", arrow)];
             for opt in &options {
                 let s = if *opt == current {
                     Style::default()
@@ -560,7 +1046,7 @@ fn draw_edit_form(f: &mut Frame, app: &App, area: Rect, is_add: bool) {
                 spans.push(Span::styled(format!(" {} ", opt), s));
                 spans.push(Span::raw("  "));
             }
-            spans.push(Span::styled(" ▶ ", arrow_style));
+            spans.push(Span::styled(" ▶ ", arrow));
             Line::from(spans)
         } else {
             let buf = match field {
@@ -572,482 +1058,26 @@ fn draw_edit_form(f: &mut Frame, app: &App, area: Rect, is_add: bool) {
                 EditField::Priority | EditField::Recurrence => unreachable!(),
             };
             let cursor = if focused { "█" } else { "" };
-            Line::from(vec![Span::styled(
+            Line::from(Span::styled(
                 format!(" {}{} ", buf, cursor),
                 Style::default().fg(Color::White).bg(input_bg),
-            )])
+            ))
         };
 
-        let block = Block::default()
-            .borders(Borders::BOTTOM)
-            .border_style(if focused {
-                Style::default().fg(COLOR_FOCUSED_BORDER)
-            } else {
-                Style::default().fg(Color::Rgb(50, 50, 50))
-            });
-
-        let para = Paragraph::new(vec![label_line, input_line]).block(block);
-        f.render_widget(para, chunk);
-    }
-}
-
-// ── deps panel ────────────────────────────────────────────────────────────────
-
-fn draw_deps(f: &mut Frame, app: &App, area: Rect) {
-    let border_style = if app.focused_panel == FocusedPanel::Right {
-        Style::default().fg(COLOR_ACCENT)
-    } else {
-        Style::default().fg(Color::DarkGray)
-    };
-
-    let tasks = &app.tasks;
-    let visible: Vec<(usize, &Task)> = tasks
-        .iter()
-        .enumerate()
-        .filter(|(_, t)| !t.is_deleted())
-        .collect();
-
-    let mut lines: Vec<Line> = Vec::new();
-
-    match app.selected_task() {
-        None => {
-            lines.push(Line::from(Span::styled(
-                "No task selected",
-                Style::default().fg(Color::DarkGray),
-            )));
-        }
-        Some(task) => {
-            let task_vis_id = app.selected_visible_id().unwrap_or(0);
-
-            // Title
-            lines.push(Line::from(vec![
-                Span::styled("Task #", Style::default().fg(Color::DarkGray)),
-                Span::styled(
-                    format!("{}: ", task_vis_id),
-                    Style::default()
-                        .fg(COLOR_ACCENT)
-                        .add_modifier(Modifier::BOLD),
-                ),
-                Span::styled(
-                    truncate(&task.text, 30),
-                    Style::default()
-                        .fg(Color::White)
-                        .add_modifier(Modifier::BOLD),
-                ),
-            ]));
-            lines.push(Line::from(""));
-
-            // ── Depends on (upstream) ─────────────────────────────────────────
-            lines.push(Line::from(Span::styled(
-                "Depends on:",
-                Style::default()
-                    .fg(Color::White)
-                    .add_modifier(Modifier::BOLD),
-            )));
-            lines.push(Line::from(""));
-
-            if task.depends_on.is_empty() {
-                lines.push(Line::from(Span::styled(
-                    "  No dependencies.",
-                    Style::default().fg(Color::DarkGray),
-                )));
-            } else {
-                for dep_uuid in &task.depends_on {
-                    if let Some(vis_id) = visible.iter().position(|(_, t)| t.uuid == *dep_uuid) {
-                        let dep_task = visible[vis_id].1;
-                        let num = vis_id + 1;
-                        let is_done = dep_task.completed;
-                        lines.push(Line::from(vec![
-                            Span::styled(
-                                if is_done { "  ✓ " } else { "  ◦ " },
-                                Style::default().fg(if is_done {
-                                    Color::Green
-                                } else {
-                                    Color::Red
-                                }),
-                            ),
-                            Span::styled(
-                                format!("#{} — ", num),
-                                Style::default().fg(Color::DarkGray),
-                            ),
-                            Span::styled(
-                                truncate(&dep_task.text, 28),
-                                Style::default().fg(if is_done {
-                                    COLOR_DONE
-                                } else {
-                                    Color::White
-                                }),
-                            ),
-                        ]));
-                    }
-                }
-            }
-
-            // ── Required by (downstream) ──────────────────────────────────────
-            lines.push(Line::from(""));
-            lines.push(Line::from(Span::styled(
-                "Required by:",
-                Style::default()
-                    .fg(Color::White)
-                    .add_modifier(Modifier::BOLD),
-            )));
-            lines.push(Line::from(""));
-
-            let downstream: Vec<(usize, &Task)> = visible
-                .iter()
-                .filter(|(_, t)| t.depends_on.contains(&task.uuid))
-                .map(|(i, t)| (*i, *t))
-                .collect();
-
-            if downstream.is_empty() {
-                lines.push(Line::from(Span::styled(
-                    "  No tasks depend on this one.",
-                    Style::default().fg(Color::DarkGray),
-                )));
-            } else {
-                for (_, dep_task) in &downstream {
-                    let vis_id = visible
-                        .iter()
-                        .position(|(_, t)| t.uuid == dep_task.uuid)
-                        .map(|p| p + 1)
-                        .unwrap_or(0);
-                    let is_done = dep_task.completed;
-                    lines.push(Line::from(vec![
-                        Span::styled(
-                            if is_done { "  ✓ " } else { "  ◦ " },
-                            Style::default().fg(if is_done { Color::Green } else { Color::Yellow }),
-                        ),
-                        Span::styled(
-                            format!("#{} — ", vis_id),
-                            Style::default().fg(Color::DarkGray),
-                        ),
-                        Span::styled(
-                            truncate(&dep_task.text, 28),
-                            Style::default().fg(if is_done { COLOR_DONE } else { Color::White }),
-                        ),
-                    ]));
-                }
-            }
-
-            // ── Status ────────────────────────────────────────────────────────
-            lines.push(Line::from(""));
-            let is_blocked = task.is_blocked(tasks);
-            if is_blocked {
-                let blockers: Vec<String> = task
-                    .depends_on
-                    .iter()
-                    .filter_map(|uuid| {
-                        let pos = visible.iter().position(|(_, t)| t.uuid == *uuid)?;
-                        let t = visible[pos].1;
-                        if !t.completed {
-                            Some(format!("#{}", pos + 1))
-                        } else {
-                            None
-                        }
-                    })
-                    .collect();
-                lines.push(Line::from(vec![
-                    Span::styled("[~] ", Style::default().fg(COLOR_BLOCKED)),
-                    Span::styled("Blocked by: ", Style::default().fg(Color::DarkGray)),
-                    Span::styled(
-                        blockers.join(", "),
-                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                    ),
-                ]));
-            } else if !task.completed {
-                lines.push(Line::from(Span::styled(
-                    "[ ] Not blocked",
-                    Style::default().fg(Color::Green),
-                )));
-            } else {
-                lines.push(Line::from(Span::styled(
-                    "[x] Completed",
-                    Style::default().fg(COLOR_DONE),
-                )));
-            }
-        }
-    }
-
-    let inner_height = area.height.saturating_sub(2) as usize;
-    let content_len = lines.len();
-    let max_scroll = content_len.saturating_sub(inner_height);
-    let scroll = app.details_scroll.min(max_scroll);
-
-    f.render_widget(
-        Paragraph::new(lines)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .border_style(border_style),
-            )
-            .wrap(Wrap { trim: true })
-            .scroll((scroll as u16, 0)),
-        area,
-    );
-}
-
-// ── stats panel ───────────────────────────────────────────────────────────────
-
-fn draw_stats(f: &mut Frame, app: &App, area: Rect) {
-    let tasks = &app.tasks;
-    let total = tasks.len();
-    let completed = tasks.iter().filter(|t| t.completed).count();
-    let pending = total - completed;
-    let overdue = tasks.iter().filter(|t| t.is_overdue()).count();
-    let blocked = tasks
-        .iter()
-        .filter(|t| !t.completed && t.is_blocked(tasks))
-        .count();
-    let pct = if total == 0 {
-        0
-    } else {
-        (completed * 100) / total
-    };
-
-    let high = tasks
-        .iter()
-        .filter(|t| t.priority == crate::models::Priority::High && !t.completed)
-        .count();
-    let medium = tasks
-        .iter()
-        .filter(|t| t.priority == crate::models::Priority::Medium && !t.completed)
-        .count();
-    let low = tasks
-        .iter()
-        .filter(|t| t.priority == crate::models::Priority::Low && !t.completed)
-        .count();
-
-    // ── Projects breakdown ────────────────────────────────────────────────────
-    let mut project_map: std::collections::BTreeMap<String, (usize, usize)> =
-        std::collections::BTreeMap::new();
-    for t in tasks.iter() {
-        if let Some(ref p) = t.project {
-            let e = project_map.entry(p.clone()).or_insert((0, 0));
-            if t.completed {
-                e.1 += 1;
-            } else {
-                e.0 += 1;
-            }
-        }
-    }
-
-    // ── Tags breakdown ────────────────────────────────────────────────────────
-    let mut tag_map: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
-    for t in tasks.iter().filter(|t| !t.completed) {
-        for tag in &t.tags {
-            *tag_map.entry(tag.clone()).or_insert(0) += 1;
-        }
-    }
-
-    let bar_width = (area.width as usize).saturating_sub(6).min(20);
-    let filled = if total == 0 {
-        0
-    } else {
-        (completed * bar_width) / total
-    };
-    let bar = format!("[{}{}]", "█".repeat(filled), "░".repeat(bar_width - filled));
-    let bar_color = if pct == 100 {
-        Color::Green
-    } else if pct >= 50 {
-        Color::Yellow
-    } else {
-        Color::Red
-    };
-
-    let today = Local::now().naive_local().date();
-    let activity: Vec<(String, usize)> = (0..7)
-        .rev()
-        .map(|i| {
-            let date = today - chrono::Duration::days(i);
-            let count = tasks
-                .iter()
-                .filter(|t| t.completed_at == Some(date))
-                .count();
-            (date.format("%b %d").to_string(), count)
-        })
-        .collect();
-    let max_act = activity.iter().map(|(_, c)| *c).max().unwrap_or(1).max(1);
-
-    let lbl = |s: &str| Span::styled(format!("{:<12}", s), Style::default().fg(Color::DarkGray));
-    let section = |s: &str| {
-        Line::from(Span::styled(
-            s.to_string(),
-            Style::default()
-                .fg(Color::White)
-                .add_modifier(Modifier::BOLD),
-        ))
-    };
-
-    let mut lines: Vec<Line> = vec![
-        section("Overview"),
-        Line::from(""),
-        Line::from(vec![
-            lbl("Progress"),
-            Span::styled(bar, Style::default().fg(bar_color)),
-            Span::styled(
-                format!(" {}%", pct),
-                Style::default().fg(bar_color).add_modifier(Modifier::BOLD),
-            ),
-        ]),
-        Line::from(vec![
-            lbl("Total"),
-            Span::styled(total.to_string(), Style::default().fg(COLOR_ACCENT)),
-        ]),
-        Line::from(vec![
-            lbl("Pending"),
-            Span::styled(pending.to_string(), Style::default().fg(Color::White)),
-        ]),
-        Line::from(vec![
-            lbl("Completed"),
-            Span::styled(completed.to_string(), Style::default().fg(Color::Green)),
-        ]),
-    ];
-    if overdue > 0 {
-        lines.push(Line::from(vec![
-            lbl("Overdue"),
-            Span::styled(
-                overdue.to_string(),
-                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-            ),
-        ]));
-    }
-    if blocked > 0 {
-        lines.push(Line::from(vec![
-            lbl("Blocked"),
-            Span::styled(blocked.to_string(), Style::default().fg(COLOR_BLOCKED)),
-        ]));
-    }
-
-    // ── By Priority ───────────────────────────────────────────────────────────
-    lines.push(Line::from(""));
-    lines.push(section("By Priority (pending)"));
-    lines.push(Line::from(""));
-    lines.push(Line::from(vec![
-        lbl("High"),
-        Span::styled(high.to_string(), Style::default().fg(COLOR_HIGH)),
-    ]));
-    lines.push(Line::from(vec![
-        lbl("Medium"),
-        Span::styled(medium.to_string(), Style::default().fg(COLOR_MEDIUM)),
-    ]));
-    lines.push(Line::from(vec![
-        lbl("Low"),
-        Span::styled(low.to_string(), Style::default().fg(COLOR_LOW)),
-    ]));
-
-    // ── By Project ────────────────────────────────────────────────────────────
-    if !project_map.is_empty() {
-        lines.push(Line::from(""));
-        lines.push(section("By Project"));
-        lines.push(Line::from(""));
-        let max_name = project_map
-            .keys()
-            .map(|k| k.len())
-            .max()
-            .unwrap_or(8)
-            .min(16);
-        for (name, (pend, done)) in &project_map {
-            let proj_total = pend + done;
-            let proj_pct = (done * 100) / proj_total;
-            let truncated = truncate(name, max_name + 1);
-            lines.push(Line::from(vec![
-                Span::styled(
-                    format!("{:<width$}", truncated, width = max_name + 2),
-                    Style::default().fg(Color::Magenta),
-                ),
-                Span::styled(
-                    format!("{} pending", pend),
-                    Style::default().fg(Color::White),
-                ),
-                Span::styled(
-                    format!("  {} done", done),
-                    Style::default().fg(Color::DarkGray),
-                ),
-                Span::styled(
-                    format!("  ({}%)", proj_pct),
-                    Style::default().fg(if proj_pct == 100 {
-                        Color::Green
-                    } else {
-                        Color::DarkGray
-                    }),
-                ),
-            ]));
-        }
-    }
-
-    // ── By Tag ────────────────────────────────────────────────────────────────
-    if !tag_map.is_empty() {
-        lines.push(Line::from(""));
-        lines.push(section("Tags (pending)"));
-        lines.push(Line::from(""));
-        let max_tag = tag_map.keys().map(|k| k.len()).max().unwrap_or(6).min(16);
-        let mut tags_sorted: Vec<(&String, &usize)> = tag_map.iter().collect();
-        tags_sorted.sort_by(|a, b| b.1.cmp(a.1));
-        for (tag, count) in tags_sorted {
-            let truncated = truncate(tag, max_tag + 1);
-            lines.push(Line::from(vec![
-                Span::styled(
-                    format!("{:<width$}", truncated, width = max_tag + 2),
-                    Style::default().fg(COLOR_ACCENT),
-                ),
-                Span::styled(
-                    format!("{} task{}", count, if *count == 1 { "" } else { "s" }),
-                    Style::default().fg(Color::White),
-                ),
-            ]));
-        }
-    }
-
-    // ── Last 7 days ───────────────────────────────────────────────────────────
-    lines.push(Line::from(""));
-    lines.push(section("Last 7 days"));
-    lines.push(Line::from(""));
-
-    let act_bar_w = (area.width as usize).saturating_sub(14).min(10);
-    for (label, count) in &activity {
-        let filled = (count * act_bar_w) / max_act;
-        let bar = format!("{}{}", "█".repeat(filled), "░".repeat(act_bar_w - filled));
-        let bar_style = if *count == 0 {
-            Style::default().fg(Color::DarkGray)
+        let border_style = if focused {
+            Style::default().fg(COLOR_FOCUSED_BORDER)
         } else {
-            Style::default().fg(Color::Green)
+            Style::default().fg(Color::Rgb(50, 50, 50))
         };
-        lines.push(Line::from(vec![
-            Span::styled(format!("{} ", label), Style::default().fg(Color::DarkGray)),
-            Span::styled(bar, bar_style),
-            Span::styled(
-                format!(" {}", count),
-                Style::default().fg(if *count == 0 {
-                    Color::DarkGray
-                } else {
-                    Color::White
-                }),
-            ),
-        ]));
-    }
-
-    let inner_height = area.height.saturating_sub(2) as usize;
-    let content_len = lines.len();
-    let max_scroll = content_len.saturating_sub(inner_height);
-    let scroll = app.details_scroll.min(max_scroll);
-
-    let border_style = if app.focused_panel == FocusedPanel::Right {
-        Style::default().fg(COLOR_ACCENT)
-    } else {
-        Style::default().fg(Color::DarkGray)
-    };
-
-    f.render_widget(
-        Paragraph::new(lines)
-            .block(
+        f.render_widget(
+            Paragraph::new(vec![label_line, input_line]).block(
                 Block::default()
-                    .borders(Borders::ALL)
+                    .borders(Borders::BOTTOM)
                     .border_style(border_style),
-            )
-            .wrap(Wrap { trim: false })
-            .scroll((scroll as u16, 0)),
-        area,
-    );
+            ),
+            chunk,
+        );
+    }
 }
 
 // ── search overlay ────────────────────────────────────────────────────────────
@@ -1103,39 +1133,33 @@ fn draw_footer(f: &mut Frame, app: &App, area: Rect) {
                 Span::styled("[S-Tab]", Style::default().fg(COLOR_ACCENT)),
                 Span::raw(" prev  "),
                 Span::styled("[←/→]", Style::default().fg(COLOR_ACCENT)),
-                Span::raw(" priority  "),
+                Span::raw(" cycle  "),
                 Span::styled("[Enter]", Style::default().fg(Color::Green)),
                 Span::raw(" save  "),
                 Span::styled("[Esc]", Style::default().fg(Color::Red)),
                 Span::raw(" cancel"),
             ]),
             _ => Line::from(vec![
-                Span::styled("Navigate: ", Style::default().fg(Color::DarkGray)),
                 Span::styled("j/k", Style::default().fg(COLOR_ACCENT)),
-                Span::raw("  "),
-                Span::styled("Focus: ", Style::default().fg(Color::DarkGray)),
+                Span::raw(" nav  "),
                 Span::styled("Tab", Style::default().fg(COLOR_ACCENT)),
-                Span::raw("  "),
-                Span::styled("Switch tab: ", Style::default().fg(Color::DarkGray)),
+                Span::raw(" focus  "),
                 Span::styled("[ ]", Style::default().fg(COLOR_ACCENT)),
-                Span::raw("  "),
-                Span::styled("Add: ", Style::default().fg(Color::DarkGray)),
+                Span::raw(" tab  "),
                 Span::styled("a", Style::default().fg(Color::Green)),
-                Span::raw("  "),
-                Span::styled("Edit: ", Style::default().fg(Color::DarkGray)),
+                Span::raw(" add  "),
                 Span::styled("e", Style::default().fg(Color::Yellow)),
-                Span::raw("  "),
-                Span::styled("Done: ", Style::default().fg(Color::DarkGray)),
+                Span::raw(" edit  "),
                 Span::styled("d", Style::default().fg(COLOR_ACCENT)),
-                Span::raw("  "),
-                Span::styled("Delete: ", Style::default().fg(Color::DarkGray)),
+                Span::raw(" done  "),
                 Span::styled("x", Style::default().fg(Color::Red)),
-                Span::raw("  "),
-                Span::styled("Quit: ", Style::default().fg(Color::DarkGray)),
+                Span::raw(" del  "),
+                Span::styled("/", Style::default().fg(COLOR_ACCENT)),
+                Span::raw(" search  "),
                 Span::styled("q", Style::default().fg(COLOR_ACCENT)),
-                Span::raw("  "),
-                Span::styled("Keybindings: ", Style::default().fg(Color::DarkGray)),
+                Span::raw(" quit  "),
                 Span::styled("?", Style::default().fg(COLOR_ACCENT)),
+                Span::raw(" help"),
             ]),
         }
     };
@@ -1160,34 +1184,30 @@ fn help_entries() -> Vec<HelpEntry> {
         },
         HelpEntry {
             key: "j / k",
-            action: "Move cursor down / up",
+            action: "Navigate list",
             description: None,
         },
         HelpEntry {
             key: "↑ / ↓",
-            action: "Scroll details panel",
-            description: Some(
-                "Scrolls the right-hand details or stats panel without moving the selected task.",
-            ),
+            action: "Scroll right panel",
+            description: Some("Scrolls the right panel without moving the selected item."),
         },
         HelpEntry {
             key: "g / G",
-            action: "Jump to first / last task",
+            action: "First / last item",
             description: None,
         },
         HelpEntry {
             key: "Tab",
             action: "Toggle panel focus",
             description: Some(
-                "Moves focus between the task list (left) and the details/stats panel (right). The focused panel has a cyan border.",
+                "Switches focus between [1] left and [0] right panel. Focused panel has cyan border.",
             ),
         },
         HelpEntry {
             key: "[ / ]",
-            action: "Cycle right panel tabs",
-            description: Some(
-                "Switches the right panel between Details, Stats and Deps. [ goes back, ] goes forward. Works from either panel.",
-            ),
+            action: "Cycle left panel tabs",
+            description: Some("Switches the left panel [1] between Tasks, Projects, and Tags."),
         },
         HelpEntry {
             key: "──── Actions",
@@ -1197,37 +1217,27 @@ fn help_entries() -> Vec<HelpEntry> {
         HelpEntry {
             key: "a",
             action: "Add new task",
-            description: Some(
-                "Opens a blank form in the right panel. Fill in fields with Tab, confirm with Enter.",
-            ),
+            description: Some("Opens a blank form in [0]. Tab navigates fields, Enter saves."),
         },
         HelpEntry {
             key: "e",
             action: "Edit selected task",
-            description: Some(
-                "Opens the edit form pre-filled with the selected task's current values. Tab navigates fields, Enter saves.",
-            ),
+            description: Some("Opens the edit form pre-filled. Tab navigates fields, Enter saves."),
         },
         HelpEntry {
             key: "d",
             action: "Toggle done / undone",
-            description: Some(
-                "Marks a pending task as completed. If the task has recurrence, a new occurrence is created automatically.",
-            ),
+            description: Some("Marks task completed. Recurring tasks spawn a new occurrence."),
         },
         HelpEntry {
             key: "x",
             action: "Delete task",
-            description: Some(
-                "Prompts for confirmation [y/n]. Tasks are soft-deleted so sync can propagate the deletion to other devices.",
-            ),
+            description: Some("Prompts [y/n]. Tasks are soft-deleted."),
         },
         HelpEntry {
             key: "X",
-            action: "Clear all tasks",
-            description: Some(
-                "Prompts for confirmation [y/n]. Deletes all tasks currently visible (respects active filters).",
-            ),
+            action: "Clear all visible tasks",
+            description: Some("Prompts [y/n]. Deletes all tasks matching active filters."),
         },
         HelpEntry {
             key: "──── Filters",
@@ -1237,23 +1247,17 @@ fn help_entries() -> Vec<HelpEntry> {
         HelpEntry {
             key: "f",
             action: "Cycle status filter",
-            description: Some(
-                "Cycles through Pending → Done → All. The active filter is shown in the list title.",
-            ),
+            description: Some("Pending → Done → All."),
         },
         HelpEntry {
             key: "p",
             action: "Cycle priority filter",
-            description: Some(
-                "Cycles through All → High → Medium → Low. Combine with f to narrow down tasks.",
-            ),
+            description: Some("All → High → Medium → Low."),
         },
         HelpEntry {
             key: "/",
-            action: "Search tasks",
-            description: Some(
-                "Opens an inline search bar. Results filter live as you type. Enter confirms, Esc cancels and clears the filter.",
-            ),
+            action: "Search",
+            description: Some("Live filter. @project and #tag tokens supported."),
         },
         HelpEntry {
             key: "──── General",
@@ -1262,12 +1266,12 @@ fn help_entries() -> Vec<HelpEntry> {
         },
         HelpEntry {
             key: "?",
-            action: "Open this help",
+            action: "This help",
             description: None,
         },
         HelpEntry {
             key: "Esc",
-            action: "Close popup / cancel",
+            action: "Close / cancel",
             description: None,
         },
         HelpEntry {
@@ -1280,7 +1284,6 @@ fn help_entries() -> Vec<HelpEntry> {
 
 fn draw_help_popup(f: &mut Frame, app: &App, area: Rect) {
     let entries = help_entries();
-
     let selectable: Vec<usize> = entries
         .iter()
         .enumerate()
@@ -1288,14 +1291,11 @@ fn draw_help_popup(f: &mut Frame, app: &App, area: Rect) {
         .map(|(i, _)| i)
         .collect();
     let selectable_count = selectable.len();
-
     let sel_pos = app.help_selected.min(selectable_count.saturating_sub(1));
     let sel_real = selectable[sel_pos];
-
     let desc_text = entries[sel_real].description.unwrap_or("");
     let desc_h = 4u16;
 
-    // Fixed dimensions — never changes size while navigating
     let popup_w = (area.width as f32 * 0.70) as u16;
     let popup_h = (area.height as f32 * 0.80) as u16;
     let popup_x = (area.width.saturating_sub(popup_w)) / 2;
@@ -1310,7 +1310,6 @@ fn draw_help_popup(f: &mut Frame, app: &App, area: Rect) {
     f.render_widget(Clear, popup_area);
 
     let inner_list_h = chunks[0].height.saturating_sub(2) as usize;
-
     let scroll = if sel_real >= inner_list_h {
         sel_real - inner_list_h + 1
     } else {
@@ -1325,7 +1324,6 @@ fn draw_help_popup(f: &mut Frame, app: &App, area: Rect) {
         .map(|(i, e)| {
             let is_section = e.action.is_empty();
             let is_selected = i == sel_real;
-
             if is_section {
                 Row::new(vec![
                     Cell::from(e.key).style(
@@ -1336,53 +1334,46 @@ fn draw_help_popup(f: &mut Frame, app: &App, area: Rect) {
                     Cell::from(""),
                 ])
             } else {
-                let key_style = Style::default()
-                    .fg(COLOR_ACCENT)
-                    .add_modifier(if is_selected {
-                        Modifier::BOLD
-                    } else {
-                        Modifier::empty()
-                    });
-                let action_style = Style::default()
-                    .fg(Color::White)
-                    .add_modifier(if is_selected {
-                        Modifier::BOLD
-                    } else {
-                        Modifier::empty()
-                    });
-                let row_style = if is_selected {
+                Row::new(vec![
+                    Cell::from(format!("  {}", e.key)).style(
+                        Style::default()
+                            .fg(COLOR_ACCENT)
+                            .add_modifier(if is_selected {
+                                Modifier::BOLD
+                            } else {
+                                Modifier::empty()
+                            }),
+                    ),
+                    Cell::from(e.action).style(Style::default().fg(Color::White).add_modifier(
+                        if is_selected {
+                            Modifier::BOLD
+                        } else {
+                            Modifier::empty()
+                        },
+                    )),
+                ])
+                .style(if is_selected {
                     Style::default().bg(COLOR_SELECTED_BG)
                 } else {
                     Style::default()
-                };
-                Row::new(vec![
-                    Cell::from(format!("  {}", e.key)).style(key_style),
-                    Cell::from(e.action).style(action_style),
-                ])
-                .style(row_style)
+                })
             }
         })
         .collect();
 
     let counter = format!(" {} of {} ", sel_pos + 1, selectable_count);
-
     let table = Table::new(rows, [Constraint::Length(18), Constraint::Min(10)]).block(
         Block::default()
             .borders(Borders::ALL)
             .title(" Keybindings ")
             .title_bottom(
-                Line::from(vec![Span::styled(
-                    counter,
-                    Style::default().fg(Color::DarkGray),
-                )])
-                .right_aligned(),
+                Line::from(Span::styled(counter, Style::default().fg(Color::DarkGray)))
+                    .right_aligned(),
             )
             .border_style(Style::default().fg(COLOR_ACCENT)),
     );
-
     f.render_widget(table, chunks[0]);
 
-    // Description box — border only when has content, space always reserved
     let desc_para = Paragraph::new(desc_text)
         .block(
             Block::default()
@@ -1407,39 +1398,4 @@ fn truncate(s: &str, max: usize) -> String {
         result.push('…');
     }
     result
-}
-
-fn due_display(task: &Task) -> String {
-    let Some(due) = task.due_date else {
-        return String::new();
-    };
-    let today = Local::now().naive_local().date();
-    let days = (due - today).num_days();
-    match days {
-        d if d < 0 => format!("{}d late", d.abs()),
-        0 => "today".into(),
-        d => format!("{}d", d),
-    }
-}
-
-fn due_style(task: &Task) -> Style {
-    if task.completed {
-        return Style::default().fg(COLOR_DONE);
-    }
-    let Some(due) = task.due_date else {
-        return Style::default();
-    };
-    let today = Local::now().naive_local().date();
-    let days = (due - today).num_days();
-    if days < 0 {
-        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)
-    } else if days == 0 {
-        Style::default()
-            .fg(Color::Yellow)
-            .add_modifier(Modifier::BOLD)
-    } else if days <= 7 {
-        Style::default().fg(Color::Yellow)
-    } else {
-        Style::default().fg(COLOR_ACCENT)
-    }
 }

@@ -1,28 +1,39 @@
 //! Keyboard event handling for the TUI.
 //!
-//! # Keybinds — Normal mode
+//! # Keybinds — Normal mode (Left panel focused)
 //! | Key      | Action                                  |
 //! |----------|-----------------------------------------|
-//! | `j/k`    | Navigate list                           |
-//! | `↑/↓`    | Scroll details panel                    |
-//! | `d`      | Toggle done / undone                    |
-//! | `e`      | Open edit form                          |
+//! | `j/k`    | Navigate active tab list                |
+//! | `g/G`    | Jump to first/last                      |
+//! | `[/]`    | Cycle left panel tabs (Tasks/Projects/Tags) |
+//! | `d`      | Toggle done / undone (Tasks tab only)   |
+//! | `e`      | Open edit form (Tasks tab only)         |
+//! | `a`      | Open add form                           |
 //! | `/`      | Enter search mode                       |
-//! | `Tab`    | Cycle status filter                     |
+//! | `f`      | Cycle status filter                     |
 //! | `p`      | Cycle priority filter                   |
-//! | `S`      | Toggle stats panel                      |
-//! | `x`      | Enter confirm-delete mode               |
+//! | `x`      | Delete task (Tasks tab only)            |
+//! | `X`      | Clear all visible tasks                 |
+//! | `?`      | Help popup                              |
+//! | `Tab`    | Toggle panel focus                      |
 //! | `q`/Esc  | Quit                                    |
 //!
-//! # Keybinds — EditForm mode
+//! # Keybinds — Normal mode (Right panel focused)
+//! | Key      | Action                                  |
+//! |----------|-----------------------------------------|
+//! | `j/k`/↑↓ | Scroll right panel content              |
+//! | `?`      | Help popup                              |
+//! | `q`/Esc  | Quit                                    |
+//!
+//! # Keybinds — EditForm / AddForm mode
 //! | Key         | Action                               |
 //! |-------------|--------------------------------------|
 //! | `Tab`       | Next field                           |
 //! | `Shift+Tab` | Previous field                       |
-//! | `←/→`       | Cycle priority (on Priority field)   |
-//! | `Enter`     | Save all changes                     |
-//! | `Esc`       | Cancel edit                          |
-//! | `Backspace` | Delete last char (text fields)       |
+//! | `←/→`       | Cycle selector fields (Priority/Recurrence) |
+//! | `Enter`     | Save                                 |
+//! | `Esc`       | Cancel                               |
+//! | `Backspace` | Delete last char                     |
 //! | char        | Append to focused text field         |
 
 use anyhow::Result;
@@ -32,7 +43,7 @@ use crate::models::Task;
 use crate::storage::Storage;
 use crate::tag_normalizer::{collect_existing_tags, normalize_tags};
 
-use super::app::{App, EditField, FocusedPanel, Mode};
+use super::app::{App, EditField, FocusedPanel, LeftPanel, Mode};
 
 pub fn handle(app: &mut App, storage: &impl Storage) -> Result<bool> {
     let ev = event::read()?;
@@ -45,7 +56,7 @@ pub fn handle(app: &mut App, storage: &impl Storage) -> Result<bool> {
 
     match app.mode {
         Mode::Normal => {
-            // Tab always toggles focus regardless of which panel is active
+            // Tab always toggles panel focus
             if key.code == KeyCode::Tab {
                 app.focused_panel = app.focused_panel.toggle();
                 app.details_scroll = 0;
@@ -66,7 +77,7 @@ pub fn handle(app: &mut App, storage: &impl Storage) -> Result<bool> {
     }
 }
 
-// ── normal mode ───────────────────────────────────────────────────────────────
+// ── left panel (focused) ──────────────────────────────────────────────────────
 
 fn handle_left(
     app: &mut App,
@@ -75,40 +86,68 @@ fn handle_left(
     _mods: KeyModifiers,
 ) -> Result<bool> {
     match key {
+        // j/k — navigate current left tab
         KeyCode::Char('j') => {
-            app.move_down();
+            match app.left_panel {
+                LeftPanel::Tasks => app.move_down(),
+                LeftPanel::Projects => app.tree_move_down(),
+                _ => app.move_left_down(),
+            }
             app.status_msg = None;
         }
         KeyCode::Char('k') => {
-            app.move_up();
+            match app.left_panel {
+                LeftPanel::Tasks => app.move_up(),
+                LeftPanel::Projects => app.tree_move_up(),
+                _ => app.move_left_up(),
+            }
             app.status_msg = None;
         }
+
+        // Arrow keys scroll right panel from left (lazygit behaviour)
         KeyCode::Down => app.scroll_details_down(),
         KeyCode::Up => app.scroll_details_up(),
 
         // Jump to first / last
         KeyCode::Char('g') => {
             app.selected = 0;
+            app.left_selected = 0;
+            app.tree_selected = 0;
             app.details_scroll = 0;
             app.status_msg = None;
         }
         KeyCode::Char('G') => {
-            app.selected = app.filtered_indices.len().saturating_sub(1);
+            let len = app.left_list_len();
+            match app.left_panel {
+                LeftPanel::Tasks => app.selected = app.filtered_indices.len().saturating_sub(1),
+                LeftPanel::Projects => app.tree_selected = app.project_tree.len().saturating_sub(1),
+                _ => app.left_selected = len.saturating_sub(1),
+            }
             app.details_scroll = 0;
             app.status_msg = None;
         }
 
-        // Help popup
+        // Enter / Space — expand/collapse project header in tree
+        KeyCode::Enter | KeyCode::Char(' ') if app.left_panel == LeftPanel::Projects => {
+            app.tree_toggle_expand();
+            app.status_msg = None;
+        }
+
+        // Help
         KeyCode::Char('?') => {
             app.help_selected = 0;
             app.mode = Mode::Help;
             app.status_msg = None;
         }
 
-        KeyCode::Char('d') => toggle_done(app, storage)?,
-        KeyCode::Char('e') => app.open_edit_form(),
+        // Actions — Tasks tab only
+        KeyCode::Char('d') if app.left_panel == LeftPanel::Tasks => toggle_done(app, storage)?,
+        KeyCode::Char('e') if app.left_panel == LeftPanel::Tasks => app.open_edit_form(),
+
+        // Add — always available
         KeyCode::Char('a') => app.open_add_form(),
 
+        // Search
         KeyCode::Char('/') => {
             app.input = String::new();
             app.mode = Mode::Search;
@@ -116,28 +155,31 @@ fn handle_left(
             app.refilter();
         }
 
+        // Filters
         KeyCode::Char('f') => {
             app.cycle_status_filter();
             app.status_msg = Some(format!("Filter: {}", app.list_filter.label()));
         }
-
         KeyCode::Char('p') => {
             app.cycle_priority_filter();
             app.status_msg = Some(format!("Priority: {}", app.priority_filter.label()));
         }
 
-        // Cycle right panel tabs even from left panel
+        // [ / ] — cycle LEFT panel tabs
         KeyCode::Char(']') => {
-            app.right_panel = app.right_panel.next();
+            app.left_panel = app.left_panel.next();
+            app.left_selected = 0;
             app.details_scroll = 0;
             app.status_msg = None;
         }
         KeyCode::Char('[') => {
-            app.right_panel = app.right_panel.prev();
+            app.left_panel = app.left_panel.prev();
+            app.left_selected = 0;
             app.details_scroll = 0;
             app.status_msg = None;
         }
 
+        // Delete
         KeyCode::Char('X') => {
             let count = app.filtered_indices.len();
             if count > 0 {
@@ -145,8 +187,7 @@ fn handle_left(
                 app.status_msg = Some(format!("Clear all {} tasks? [y/n]", count));
             }
         }
-
-        KeyCode::Char('x') => {
+        KeyCode::Char('x') if app.left_panel == LeftPanel::Tasks => {
             if !app.tasks.is_empty() {
                 app.mode = Mode::ConfirmDelete;
                 let preview = app
@@ -171,17 +212,7 @@ fn handle_right(app: &mut App, key: KeyCode) -> Result<bool> {
         KeyCode::Char('j') | KeyCode::Down => app.scroll_details_down(),
         KeyCode::Char('k') | KeyCode::Up => app.scroll_details_up(),
 
-        // Cycle tabs
-        KeyCode::Char(']') => {
-            app.right_panel = app.right_panel.next();
-            app.details_scroll = 0;
-        }
-        KeyCode::Char('[') => {
-            app.right_panel = app.right_panel.prev();
-            app.details_scroll = 0;
-        }
-
-        // Help popup accessible from both panels
+        // Help accessible from both panels
         KeyCode::Char('?') => {
             app.help_selected = 0;
             app.mode = Mode::Help;
@@ -217,7 +248,6 @@ fn handle_clear_all(app: &mut App, storage: &impl Storage, key: KeyCode) -> Resu
     match key {
         KeyCode::Char('y') | KeyCode::Enter => {
             let count = app.filtered_indices.len();
-            // Delete from highest visible id to lowest to avoid index shifting
             for vis_id in (1..=count).rev() {
                 let _ = crate::commands::remove::execute_silent(storage, vis_id);
             }
@@ -274,7 +304,6 @@ fn handle_search(app: &mut App, key: KeyCode) -> Result<bool> {
 // ── help mode ─────────────────────────────────────────────────────────────────
 
 fn handle_help(app: &mut App, key: KeyCode) -> Result<bool> {
-    // Number of selectable (non-section) entries — keep in sync with help_entries() in ui.rs
     const SELECTABLE: usize = 14;
     match key {
         KeyCode::Esc | KeyCode::Char('?') | KeyCode::Char('q') => {
@@ -311,9 +340,7 @@ fn handle_add_form(
             app.mode = Mode::Normal;
             app.status_msg = Some("Add cancelled.".into());
         }
-        KeyCode::Enter => {
-            commit_add_form(app, storage)?;
-        }
+        KeyCode::Enter => commit_add_form(app, storage)?,
         KeyCode::Tab => {
             if let Some(ref mut form) = app.edit_form {
                 if mods.contains(KeyModifiers::SHIFT) {
@@ -383,7 +410,6 @@ fn commit_add_form(app: &mut App, storage: &impl Storage) -> Result<()> {
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty())
         .collect();
-
     let existing_tags = collect_existing_tags(&app.tasks);
     let (tags, _) = normalize_tags(tags_raw, &existing_tags);
 
@@ -392,13 +418,11 @@ fn commit_add_form(app: &mut App, storage: &impl Storage) -> Result<()> {
     } else {
         Some(form.project.trim().to_string())
     };
-
     let due = if form.due.trim().is_empty() {
         None
     } else {
         Some(form.due.trim().to_string())
     };
-
     let deps: Vec<usize> = form
         .deps
         .split(',')
@@ -431,7 +455,6 @@ fn commit_add_form(app: &mut App, storage: &impl Storage) -> Result<()> {
             app.mode = Mode::Normal;
         }
     }
-
     Ok(())
 }
 
@@ -448,15 +471,8 @@ fn handle_edit_form(
             app.edit_form = None;
             app.mode = Mode::Normal;
             app.status_msg = Some("Edit cancelled.".into());
-            return Ok(false);
         }
-
-        KeyCode::Enter => {
-            commit_edit_form(app, storage)?;
-            return Ok(false);
-        }
-
-        // Tab / Shift+Tab — cycle fields
+        KeyCode::Enter => commit_edit_form(app, storage)?,
         KeyCode::Tab => {
             if let Some(ref mut form) = app.edit_form {
                 if mods.contains(KeyModifiers::SHIFT) {
@@ -471,8 +487,6 @@ fn handle_edit_form(
                 form.focused = form.focused.prev();
             }
         }
-
-        // ←/→ — cycle priority or recurrence depending on focused field
         KeyCode::Left => {
             if let Some(ref mut form) = app.edit_form {
                 match form.focused {
@@ -491,8 +505,6 @@ fn handle_edit_form(
                 }
             }
         }
-
-        // Backspace — delete from focused text field
         KeyCode::Backspace => {
             if let Some(ref mut form) = app.edit_form
                 && let Some(buf) = form.focused_buf_mut()
@@ -500,8 +512,6 @@ fn handle_edit_form(
                 buf.pop();
             }
         }
-
-        // Any printable char — append to focused text field
         KeyCode::Char(c) => {
             if let Some(ref mut form) = app.edit_form
                 && let Some(buf) = form.focused_buf_mut()
@@ -509,13 +519,10 @@ fn handle_edit_form(
                 buf.push(c);
             }
         }
-
         _ => {}
     }
     Ok(false)
 }
-
-// ── stats mode ────────────────────────────────────────────────────────────────
 
 // ── actions ───────────────────────────────────────────────────────────────────
 
@@ -523,19 +530,16 @@ fn toggle_done(app: &mut App, storage: &impl Storage) -> Result<()> {
     if app.filtered_indices.is_empty() {
         return Ok(());
     }
-
     let vis_id = match app.selected_visible_id() {
         Some(id) => id,
         None => return Ok(()),
     };
     let completed = app.selected_task().map(|t| t.completed).unwrap_or(false);
-
     let msg = if completed {
         crate::commands::undone::execute_silent(storage, vis_id)?
     } else {
         crate::commands::done::execute_silent(storage, vis_id)?
     };
-
     app.status_msg = Some(msg);
     app.reload(storage)?;
     Ok(())
@@ -546,7 +550,6 @@ fn commit_edit_form(app: &mut App, storage: &impl Storage) -> Result<()> {
         Some(id) => id,
         None => return Ok(()),
     };
-
     let form = match app.edit_form.take() {
         Some(f) => f,
         None => return Ok(()),
@@ -558,21 +561,17 @@ fn commit_edit_form(app: &mut App, storage: &impl Storage) -> Result<()> {
         return Ok(());
     }
 
-    // Parse due date
     let (due_str, clear_due) = if form.due.trim().is_empty() {
         (None, true)
     } else {
         (Some(form.due.trim().to_string()), false)
     };
-
-    // Parse project
     let (project, clear_project) = if form.project.trim().is_empty() {
         (None, true)
     } else {
         (Some(form.project.trim().to_string()), false)
     };
 
-    // Parse tags diff — normalize against existing tags first
     let tags_raw: Vec<String> = form
         .tags
         .split(',')
@@ -597,7 +596,6 @@ fn commit_edit_form(app: &mut App, storage: &impl Storage) -> Result<()> {
         .collect();
     let clear_tags = tags_normalized.is_empty() && !current_tags.is_empty();
 
-    // Parse deps — comma-separated IDs
     let deps_raw: Vec<usize> = form
         .deps
         .split(',')
@@ -607,7 +605,6 @@ fn commit_edit_form(app: &mut App, storage: &impl Storage) -> Result<()> {
         .selected_task()
         .map(|t| t.depends_on.clone())
         .unwrap_or_default();
-    // Resolve current dep UUIDs → visible IDs for comparison
     let visible: Vec<&Task> = app.tasks.iter().filter(|t| !t.is_deleted()).collect();
     let current_dep_ids: Vec<usize> = current_dep_uuids
         .iter()
@@ -646,13 +643,11 @@ fn commit_edit_form(app: &mut App, storage: &impl Storage) -> Result<()> {
 
     match crate::commands::edit::execute_silent(storage, args) {
         Ok(msg) => {
-            // Handle recurrence separately — edit command doesn't cover it
+            // Handle recurrence separately
             if let Some(real) = app.selected_real_index() {
                 let mut tasks = storage.load()?;
                 let task = &mut tasks[real];
-                if task.recurrence != form.recurrence
-                    && (form.recurrence.is_some() || task.recurrence.is_some())
-                {
+                if task.recurrence != form.recurrence {
                     task.recurrence = form.recurrence;
                     task.touch();
                     storage.save(&tasks)?;
@@ -667,7 +662,6 @@ fn commit_edit_form(app: &mut App, storage: &impl Storage) -> Result<()> {
             app.mode = Mode::Normal;
         }
     }
-
     Ok(())
 }
 
@@ -675,12 +669,10 @@ fn delete_selected(app: &mut App, storage: &impl Storage) -> Result<()> {
     if app.filtered_indices.is_empty() {
         return Ok(());
     }
-
     let vis_id = match app.selected_visible_id() {
         Some(id) => id,
         None => return Ok(()),
     };
-
     let msg = crate::commands::remove::execute_silent(storage, vis_id)?;
     app.status_msg = Some(msg);
     app.reload(storage)?;
