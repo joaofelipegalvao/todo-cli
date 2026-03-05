@@ -8,7 +8,7 @@ use anyhow::Result;
 use clap::Parser;
 use colored::Colorize;
 
-use rustodo::cli::{Cli, Commands, SyncCommands};
+use rustodo::cli::{Cli, Commands, NoteCommands, ProjectCommands, ResourceCommands, SyncCommands};
 use rustodo::commands;
 use rustodo::commands::sync::SyncCommand;
 use rustodo::storage::{JsonStorage, Storage};
@@ -38,7 +38,6 @@ fn main() {
 }
 
 fn run(cli: Cli, storage: &impl Storage) -> Result<()> {
-    // No subcommand → launch TUI
     let Some(command) = cli.command else {
         return rustodo::tui::run(storage);
     };
@@ -78,6 +77,34 @@ fn run(cli: Cli, storage: &impl Storage) -> Result<()> {
         Commands::Tags => commands::tags::execute(storage),
 
         Commands::Projects => commands::projects::execute(storage),
+
+        Commands::Project(sub) => match sub {
+            ProjectCommands::Add(args) => commands::project_add::execute(storage, args),
+            ProjectCommands::List => commands::projects::execute(storage),
+            ProjectCommands::Show { id } => commands::projects::execute_show(storage, id),
+            ProjectCommands::Edit(args) => commands::project_edit::execute(storage, args),
+            ProjectCommands::Remove { id, yes } => {
+                commands::project_remove::execute(storage, id, yes)
+            }
+        },
+
+        Commands::Note(sub) => match sub {
+            NoteCommands::Add(args) => commands::note_add::execute(storage, args),
+            NoteCommands::List(args) => commands::note_list::execute(storage, args),
+            NoteCommands::Show { id } => commands::note_show::execute(storage, id),
+            NoteCommands::Edit(args) => commands::note_edit::execute(storage, args),
+            NoteCommands::Remove { id, yes } => commands::note_remove::execute(storage, id, yes),
+        },
+
+        Commands::Resource(sub) => match sub {
+            ResourceCommands::Add(args) => commands::resource_add::execute(storage, args),
+            ResourceCommands::List(args) => commands::resource_list::execute(storage, args),
+            ResourceCommands::Show { id } => commands::resource_show::execute(storage, id),
+            ResourceCommands::Edit(args) => commands::resource_edit::execute(storage, args),
+            ResourceCommands::Remove { id, yes } => {
+                commands::resource_remove::execute(storage, id, yes)
+            }
+        },
 
         Commands::Deps { id } => commands::deps::execute(storage, id),
 

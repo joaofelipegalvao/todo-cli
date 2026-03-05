@@ -1,8 +1,4 @@
 //! Handler for `todo search <QUERY>`.
-//!
-//! Case-insensitive substring search over task descriptions, with optional
-//! tag, project, and status filters. Delegates rendering to
-//! [`display::display_lists`](crate::display::display_lists).
 
 use anyhow::Result;
 
@@ -18,9 +14,8 @@ pub fn execute(
     project: Option<String>,
     status: StatusFilter,
 ) -> Result<()> {
-    let all_tasks = storage.load()?;
+    let (all_tasks, projects, _) = storage.load_all()?;
 
-    // Perform case-insensitive search on task text, excluding deleted tasks
     let visible: Vec<_> = all_tasks
         .iter()
         .filter(|t| !t.is_deleted())
@@ -35,18 +30,18 @@ pub fn execute(
         .map(|(i, task)| (i + 1, task))
         .collect();
 
-    // Apply tag filter if specified
     if let Some(tag_name) = &tag {
         results.retain(|(_, task)| task.tags.contains(tag_name));
     }
 
-    if let Some(project_name) = &project {
-        results.retain(|(_, task)| {
-            task.project
-                .as_deref()
-                .map(|p| p.to_lowercase() == project_name.to_lowercase())
-                .unwrap_or(false)
-        });
+    // Filter by project: resolve name → UUID, then filter by project_id
+    if let Some(ref project_name) = project {
+        let proj_uuid = projects
+            .iter()
+            .find(|p| p.name.to_lowercase() == project_name.to_lowercase() && !p.is_deleted())
+            .map(|p| p.uuid);
+
+        results.retain(|(_, task)| proj_uuid.is_some() && task.project_id == proj_uuid);
     }
 
     if results.is_empty() {
@@ -54,6 +49,6 @@ pub fn execute(
     }
 
     let title = format!("Search results for \"{}\"", query);
-    display_lists(&results, &title, &visible);
+    display_lists(&results, &title, &visible, &projects);
     Ok(())
 }

@@ -10,11 +10,11 @@
 //! - Project name validation
 
 mod helpers;
-
 use helpers::TestEnv;
 use rustodo::cli::{AddArgs, EditArgs};
 use rustodo::commands::{add, done, edit, list, projects};
 use rustodo::models::{Priority, SortBy, StatusFilter};
+use rustodo::storage::Storage;
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -67,9 +67,14 @@ fn test_projects_single_project() {
 
     // Verify counts via storage
     let tasks = env.load_tasks();
+    let projects = env.storage().load_projects().unwrap();
+    let backend_uuid = projects
+        .iter()
+        .find(|p| p.name == "Backend")
+        .map(|p| p.uuid);
     let backend_tasks: Vec<_> = tasks
         .iter()
-        .filter(|t| t.project.as_deref() == Some("Backend"))
+        .filter(|t| t.project_id == backend_uuid)
         .collect();
     assert_eq!(backend_tasks.len(), 2);
 }
@@ -84,14 +89,9 @@ fn test_projects_multiple_projects() {
     let result = projects::execute(env.storage());
     assert!(result.is_ok());
 
-    let tasks = env.load_tasks();
-    let project_names: Vec<_> = tasks
-        .iter()
-        .filter_map(|t| t.project.as_deref())
-        .collect::<std::collections::HashSet<_>>()
-        .into_iter()
-        .collect();
-    assert_eq!(project_names.len(), 3);
+    let projects = env.storage().load_projects().unwrap();
+    let active_projects: Vec<_> = projects.iter().filter(|p| !p.is_deleted()).collect();
+    assert_eq!(active_projects.len(), 3);
 }
 
 #[test]
@@ -104,9 +104,14 @@ fn test_projects_pending_and_done_counts() {
     done::execute(env.storage(), 1).unwrap();
 
     let tasks = env.load_tasks();
+    let projects = env.storage().load_projects().unwrap();
+    let backend_uuid = projects
+        .iter()
+        .find(|p| p.name == "Backend")
+        .map(|p| p.uuid);
     let backend: Vec<_> = tasks
         .iter()
-        .filter(|t| t.project.as_deref() == Some("Backend"))
+        .filter(|t| t.project_id == backend_uuid)
         .collect();
 
     let pending = backend.iter().filter(|t| !t.completed).count();
@@ -129,8 +134,8 @@ fn test_projects_mixed_with_and_without_project() {
 
     // Only 1 project should exist
     let tasks = env.load_tasks();
-    let with_project = tasks.iter().filter(|t| t.project.is_some()).count();
-    let without_project = tasks.iter().filter(|t| t.project.is_none()).count();
+    let with_project = tasks.iter().filter(|t| t.project_id.is_some()).count();
+    let without_project = tasks.iter().filter(|t| t.project_id.is_none()).count();
     assert_eq!(with_project, 1);
     assert_eq!(without_project, 2);
 }
@@ -148,9 +153,14 @@ fn test_projects_all_tasks_completed() {
     assert!(result.is_ok());
 
     let tasks = env.load_tasks();
+    let projects = env.storage().load_projects().unwrap();
+    let backend_uuid = projects
+        .iter()
+        .find(|p| p.name == "Backend")
+        .map(|p| p.uuid);
     let all_done = tasks
         .iter()
-        .filter(|t| t.project.as_deref() == Some("Backend"))
+        .filter(|t| t.project_id == backend_uuid)
         .all(|t| t.completed);
     assert!(all_done);
 }
@@ -312,7 +322,12 @@ fn test_edit_assign_project() {
     assert!(result.is_ok());
 
     let tasks = env.load_tasks();
-    assert_eq!(tasks[0].project.as_deref(), Some("Backend"));
+    let projects = env.storage().load_projects().unwrap();
+    let backend_uuid = projects
+        .iter()
+        .find(|p| p.name == "Backend")
+        .map(|p| p.uuid);
+    assert_eq!(tasks[0].project_id, backend_uuid);
 }
 
 #[test]
@@ -342,7 +357,12 @@ fn test_edit_change_project() {
     assert!(result.is_ok());
 
     let tasks = env.load_tasks();
-    assert_eq!(tasks[0].project.as_deref(), Some("Frontend"));
+    let projects = env.storage().load_projects().unwrap();
+    let frontend_uuid = projects
+        .iter()
+        .find(|p| p.name == "Frontend")
+        .map(|p| p.uuid);
+    assert_eq!(tasks[0].project_id, frontend_uuid);
 }
 
 #[test]
@@ -372,7 +392,7 @@ fn test_edit_clear_project() {
     assert!(result.is_ok());
 
     let tasks = env.load_tasks();
-    assert!(tasks[0].project.is_none());
+    assert!(tasks[0].project_id.is_none());
 }
 
 #[test]

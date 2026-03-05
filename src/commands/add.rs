@@ -5,7 +5,7 @@ use colored::Colorize;
 
 use crate::cli::AddArgs;
 use crate::error::TodoError;
-use crate::models::Task;
+use crate::models::{Project, Task};
 use crate::storage::Storage;
 use crate::tag_normalizer::{collect_existing_tags, normalize_tags};
 use crate::{date_parser, validation};
@@ -57,11 +57,19 @@ fn execute_inner(storage: &impl Storage, args: AddArgs, silent: bool) -> Result<
     let existing_tags = collect_existing_tags(&tasks);
     let (normalized_tags, normalization_messages) = normalize_tags(args.tag, &existing_tags);
 
+    // Resolve project name → UUID (creates the project if it doesn't exist yet)
+    let project_id = if let Some(ref name) = args.project {
+        let projects = storage.load_projects()?;
+        Some(Project::resolve_or_create(storage, &projects, name)?)
+    } else {
+        None
+    };
+
     let mut task = Task::new(
         args.text,
         args.priority,
         normalized_tags,
-        args.project,
+        project_id,
         due,
         args.recurrence,
     );

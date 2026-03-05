@@ -1,8 +1,4 @@
 //! Handler for `todo list`.
-//!
-//! Loads all tasks, applies filters (status, priority, due, tag, project,
-//! recurrence) in sequence, optionally sorts the result, and delegates
-//! rendering to [`display::display_lists`](crate::display::display_lists).
 
 use anyhow::Result;
 
@@ -22,7 +18,7 @@ pub fn execute(
     project: Option<String>,
     recur: Option<RecurrenceFilter>,
 ) -> Result<()> {
-    let all_tasks = storage.load()?;
+    let (all_tasks, projects, _) = storage.load_all()?;
 
     let mut indexed_tasks: Vec<(usize, &_)> = all_tasks
         .iter()
@@ -49,14 +45,16 @@ pub fn execute(
         }
     }
 
-    if let Some(project_name) = &project {
+    // Filter by project: resolve name → UUID, then filter by project_id
+    if let Some(ref project_name) = project {
         let count_before = indexed_tasks.len();
-        indexed_tasks.retain(|(_, t)| {
-            t.project
-                .as_deref()
-                .map(|p| p.to_lowercase() == project_name.to_lowercase())
-                .unwrap_or(false)
-        });
+        let proj_uuid = projects
+            .iter()
+            .find(|p| p.name.to_lowercase() == project_name.to_lowercase() && !p.is_deleted())
+            .map(|p| p.uuid);
+
+        indexed_tasks.retain(|(_, t)| proj_uuid.is_some() && t.project_id == proj_uuid);
+
         if indexed_tasks.is_empty() && count_before > 0 {
             return Err(TodoError::ProjectNotFound(project_name.to_owned()).into());
         }
@@ -101,7 +99,7 @@ pub fn execute(
         .filter(|t| !t.is_deleted())
         .cloned()
         .collect();
-    display_lists(&indexed_tasks, &title, &visible);
+    display_lists(&indexed_tasks, &title, &visible, &projects);
     Ok(())
 }
 

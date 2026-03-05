@@ -51,9 +51,20 @@ pub struct Task {
     pub priority: Priority,
     /// List of tags for categorization
     pub tags: Vec<String>,
-    /// Optional project this task belongs to
+    /// UUID of the project this task belongs to.
+    ///
+    /// Links to a [`Project`] entity. Use the project's `uuid` field.
+    /// Old JSON with a `"project": "string"` field is migrated automatically
+    /// by `JsonStorage::read_file` on first load.
     #[serde(default)]
-    pub project: Option<String>,
+    pub project_id: Option<Uuid>,
+
+    /// Legacy string project name — kept for JSON migration only.
+    ///
+    /// Populated during deserialization of old files, then converted to
+    /// `project_id` by `JsonStorage`. Should be `None` in all new tasks.
+    #[serde(default, rename = "project", skip_serializing)]
+    pub project_name_legacy: Option<String>,
     /// Optional due date for deadline tracking
     pub due_date: Option<NaiveDate>,
     /// Date when the task was created
@@ -139,7 +150,7 @@ impl Task {
         text: String,
         priority: Priority,
         tags: Vec<String>,
-        project: Option<String>,
+        project_id: Option<Uuid>,
         due_date: Option<NaiveDate>,
         recurrence: Option<Recurrence>,
     ) -> Self {
@@ -149,7 +160,8 @@ impl Task {
             completed: false,
             priority,
             tags,
-            project,
+            project_id,
+            project_name_legacy: None,
             due_date,
             created_at: Local::now().naive_local().date(),
             recurrence,
@@ -339,7 +351,7 @@ impl Task {
             self.text.clone(),
             self.priority,
             self.tags.clone(),
-            self.project.clone(),
+            self.project_id,
             Some(next_due),
             Some(recurrence),
         );
@@ -355,35 +367,26 @@ impl Task {
     }
 }
 
-/// Counts the tasks of a project, returning (total, completed).
-///
-/// Project name comparison is case-insensitive for consistency.
-/// Centralizes the logic that was previously duplicated in `stats.rs` and `projects.rs`.
+/// Counts the tasks of a project by UUID, returning (total, completed).
 ///
 /// # Example
 ///
 /// ```
-/// use rustodo::models::{Task, Priority};
+/// use rustodo::models::{Task, Project, Priority};
 ///
+/// let project = Project::new("Work".into());
 /// let tasks = vec![
-///     Task::new("A".to_string(), Priority::Medium, vec![], Some("Work".to_string()), None, None),
-///     Task::new("B".to_string(), Priority::Medium, vec![], Some("Work".to_string()), None, None),
+///     Task::new("A".to_string(), Priority::Medium, vec![], Some(project.uuid), None, None),
+///     Task::new("B".to_string(), Priority::Medium, vec![], Some(project.uuid), None, None),
 /// ];
-/// let (total, done) = rustodo::models::count_by_project(&tasks, "work");
+/// let (total, done) = rustodo::models::count_by_project(&tasks, project.uuid);
 /// assert_eq!(total, 2);
 /// assert_eq!(done, 0);
 /// ```
-pub fn count_by_project(tasks: &[Task], project: &str) -> (usize, usize) {
-    let project_lower = project.to_lowercase();
+pub fn count_by_project(tasks: &[Task], project_uuid: uuid::Uuid) -> (usize, usize) {
     let matching: Vec<_> = tasks
         .iter()
-        .filter(|t| {
-            !t.is_deleted()
-                && t.project
-                    .as_deref()
-                    .map(|p| p.to_lowercase() == project_lower)
-                    .unwrap_or(false)
-        })
+        .filter(|t| !t.is_deleted() && t.project_id == Some(project_uuid))
         .collect();
 
     let total = matching.len();
@@ -672,11 +675,12 @@ mod tests {
     #[test]
     fn test_project_preserved_in_recurrence() {
         let date = NaiveDate::from_ymd_opt(2026, 2, 10).unwrap();
+        let project_uuid = Uuid::new_v4();
         let mut task = make_recurring(Some(Recurrence::Daily), Some(date));
-        task.project = Some("work".to_string());
+        task.project_id = Some(project_uuid);
         let parent_uuid = task.uuid;
         let next = task.create_next_recurrence(parent_uuid).unwrap();
-        assert_eq!(next.project, Some("work".to_string()));
+        assert_eq!(next.project_id, Some(project_uuid));
     }
 
     #[test]
@@ -694,11 +698,13 @@ mod tests {
 
     #[test]
     fn test_count_by_project_basic() {
+        let project_uuid = Uuid::new_v4();
+        let other_uuid = Uuid::new_v4();
         let mut t1 = Task::new(
             "A".to_string(),
             Priority::Medium,
             vec![],
-            Some("Work".to_string()),
+            Some(project_uuid),
             None,
             None,
         );
@@ -706,33 +712,34 @@ mod tests {
             "B".to_string(),
             Priority::Medium,
             vec![],
-            Some("Work".to_string()),
+            Some(project_uuid),
             None,
             None,
         );
-        let t3 = Task::new(
+        let _t3 = Task::new(
             "C".to_string(),
             Priority::Medium,
             vec![],
-            Some("Personal".to_string()),
+            Some(other_uuid),
             None,
             None,
         );
         t1.completed = true;
 
-        let tasks = vec![t1, t2, t3];
-        let (total, done) = count_by_project(&tasks, "work");
+        let tasks = vec![t1, t2, _t3];
+        let (total, done) = count_by_project(&tasks, project_uuid);
         assert_eq!(total, 2);
         assert_eq!(done, 1);
     }
 
     #[test]
     fn test_count_by_project_excludes_deleted() {
+        let project_uuid = Uuid::new_v4();
         let mut t1 = Task::new(
             "A".to_string(),
             Priority::Medium,
             vec![],
-            Some("Work".to_string()),
+            Some(project_uuid),
             None,
             None,
         );
@@ -741,33 +748,31 @@ mod tests {
             "B".to_string(),
             Priority::Medium,
             vec![],
-            Some("Work".to_string()),
+            Some(project_uuid),
             None,
             None,
         );
 
         let tasks = vec![t1, t2];
-        let (total, _) = count_by_project(&tasks, "Work");
+        let (total, _) = count_by_project(&tasks, project_uuid);
         assert_eq!(total, 1, "deleted tasks should not be counted");
     }
 
     #[test]
     fn test_count_by_project_case_insensitive() {
+        // UUID-based lookup is exact — no case insensitivity needed
+        let project_uuid = Uuid::new_v4();
         let t1 = Task::new(
             "A".to_string(),
             Priority::Medium,
             vec![],
-            Some("Backend".to_string()),
+            Some(project_uuid),
             None,
             None,
         );
         let tasks = vec![t1];
 
-        let (total1, _) = count_by_project(&tasks, "backend");
-        let (total2, _) = count_by_project(&tasks, "BACKEND");
-        let (total3, _) = count_by_project(&tasks, "Backend");
-        assert_eq!(total1, 1);
-        assert_eq!(total2, 1);
-        assert_eq!(total3, 1);
+        let (total, _) = count_by_project(&tasks, project_uuid);
+        assert_eq!(total, 1);
     }
 }
