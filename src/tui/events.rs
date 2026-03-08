@@ -41,7 +41,7 @@ use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 
 use crate::models::Task;
 use crate::storage::Storage;
-use crate::tag_normalizer::{collect_existing_tags, normalize_tags};
+use crate::utils::tag_normalizer::{collect_existing_tags, normalize_tags};
 
 use super::app::{App, EditField, FocusedPanel, LeftPanel, Mode};
 
@@ -249,7 +249,7 @@ fn handle_clear_all(app: &mut App, storage: &impl Storage, key: KeyCode) -> Resu
         KeyCode::Char('y') | KeyCode::Enter => {
             let count = app.filtered_indices.len();
             for vis_id in (1..=count).rev() {
-                let _ = crate::commands::remove::execute_silent(storage, vis_id);
+                let _ = crate::commands::task_remove::execute_silent(storage, vis_id);
             }
             app.reload(storage)?;
             app.mode = Mode::Normal;
@@ -440,7 +440,7 @@ fn commit_add_form(app: &mut App, storage: &impl Storage) -> Result<()> {
         depends_on: deps,
     };
 
-    match crate::commands::add::execute_silent(storage, args) {
+    match crate::commands::task_add::execute_silent(storage, args) {
         Ok(_) => {
             let count = storage
                 .load()
@@ -536,9 +536,9 @@ fn toggle_done(app: &mut App, storage: &impl Storage) -> Result<()> {
     };
     let completed = app.selected_task().map(|t| t.completed).unwrap_or(false);
     let msg = if completed {
-        crate::commands::undone::execute_silent(storage, vis_id)?
+        crate::commands::task_undone::execute_silent(storage, vis_id)?
     } else {
-        crate::commands::done::execute_silent(storage, vis_id)?
+        crate::commands::task_done::execute_silent(storage, vis_id)?
     };
     app.status_msg = Some(msg);
     app.reload(storage)?;
@@ -641,7 +641,7 @@ fn commit_edit_form(app: &mut App, storage: &impl Storage) -> Result<()> {
         clear_deps,
     };
 
-    match crate::commands::edit::execute_silent(storage, args) {
+    match crate::commands::task_edit::execute_silent(storage, args) {
         Ok(msg) => {
             // Handle recurrence separately
             if let Some(real) = app.selected_real_index() {
@@ -673,7 +673,7 @@ fn delete_selected(app: &mut App, storage: &impl Storage) -> Result<()> {
         Some(id) => id,
         None => return Ok(()),
     };
-    let msg = crate::commands::remove::execute_silent(storage, vis_id)?;
+    let msg = crate::commands::task_remove::execute_silent(storage, vis_id)?;
     app.status_msg = Some(msg);
     app.reload(storage)?;
     Ok(())

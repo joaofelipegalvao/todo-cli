@@ -16,13 +16,11 @@ pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     let index = id - 1;
     let task = &mut tasks[index];
 
-    if task.recurrence.is_none() {
+    let Some(old_pattern) = task.recurrence.take() else {
         println!("{} Task #{} has no recurrence", "".yellow(), id);
         return Ok(());
-    }
+    };
 
-    let old_pattern = task.recurrence.unwrap();
-    task.recurrence = None;
     task.touch();
 
     storage.save(&tasks)?;

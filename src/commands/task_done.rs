@@ -13,9 +13,6 @@ use crate::storage::Storage;
 use crate::validation::{validate_task_id, visible_indices};
 
 /// Marks task `id` as done, creating the next recurrence if needed.
-///
-/// When `silent = true` (TUI mode), suppresses all stdout output and returns
-/// an optional status message instead.
 pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     execute_inner(storage, id, false)?;
     Ok(())
@@ -28,7 +25,7 @@ pub fn execute_silent(storage: &impl Storage, id: usize) -> Result<String> {
 
 fn execute_inner(storage: &impl Storage, id: usize, silent: bool) -> Result<String> {
     let mut tasks = storage.load()?;
-    let vis = visible_indices(&tasks);
+    let vis = visible_indices(&tasks, |t| t.is_deleted());
     validate_task_id(id, vis.len())?;
 
     let index = vis[id - 1];
@@ -41,7 +38,6 @@ fn execute_inner(storage: &impl Storage, id: usize, silent: bool) -> Result<Stri
         .into());
     }
 
-    // Block completion if dependencies are still pending
     let blocking = tasks[index].blocking_deps(&tasks);
     if !blocking.is_empty() {
         let ids = blocking
@@ -54,11 +50,11 @@ fn execute_inner(storage: &impl Storage, id: usize, silent: bool) -> Result<Stri
             })
             .collect::<Vec<_>>()
             .join(", ");
+
         return Err(TodoError::TaskBlocked(id, ids).into());
     }
 
     tasks[index].mark_done();
-
     let task_uuid = tasks[index].uuid;
 
     if let Some(next_task) = tasks[index].create_next_recurrence(task_uuid) {
@@ -73,39 +69,52 @@ fn execute_inner(storage: &impl Storage, id: usize, silent: bool) -> Result<Stri
         if !already_exists {
             tasks.push(next_task);
             storage.save(&tasks)?;
+
             let next_vis_id = tasks.iter().filter(|t| !t.is_deleted()).count();
+
             let msg = format!(
                 "Task #{} marked as done. Next recurrence: #{} (due {})",
                 id,
                 next_vis_id,
                 next_due.format("%Y-%m-%d")
             );
+
             if !silent {
-                println!("{}", "✓ Task marked as completed".green());
+                let id_colored = format!("#{}", id).green();
+                let next_colored = format!("#{}", next_vis_id).yellow();
+
+                println!("Task {} marked as done.", id_colored);
                 println!(
-                    "{} Task #{} created (due {})",
-                    "↻".cyan(),
-                    next_vis_id,
+                    "Task {} created (due {})",
+                    next_colored,
                     next_due.format("%Y-%m-%d")
                 );
             }
+
             Ok(msg)
         } else {
             storage.save(&tasks)?;
+
             if !silent {
-                println!("{}", "✓ Task marked as completed".green());
+                let id_colored = format!("#{}", id).green();
+
+                println!("Task {} marked as done.", id_colored);
                 println!(
                     "{}",
                     "Next recurrence already exists, skipping creation.".dimmed()
                 );
             }
+
             Ok(format!("Task #{} marked as done.", id))
         }
     } else {
         storage.save(&tasks)?;
+
         if !silent {
-            println!("{}", "✓ Task marked as completed".green());
+            let id_colored = format!("#{}", id).green();
+            println!("Task {} marked as done.", id_colored);
         }
+
         Ok(format!("Task #{} marked as done.", id))
     }
 }

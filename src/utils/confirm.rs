@@ -1,11 +1,10 @@
-//! Shared terminal utilities.
+//! Yes/no confirmation prompt for destructive operations.
 //!
-//! Currently exposes a single helper, [`confirm`], which prints a yes/no
-//! prompt and reads a single line from stdin. Used by [`commands::remove`]
-//! and [`commands::clear`] before destructive operations.
+//! Used by [`commands::task_remove`] and [`commands::task_clear`] before
+//! irreversible actions.
 //!
-//! [`commands::remove`]: crate::commands::remove
-//! [`commands::clear`]: crate::commands::clear
+//! [`commands::task_remove`]: crate::commands::task_remove
+//! [`commands::task_clear`]: crate::commands::task_clear
 
 use anyhow::Result;
 use colored::Colorize;

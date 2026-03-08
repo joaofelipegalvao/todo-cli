@@ -12,7 +12,7 @@
 use anyhow::{Context, Result, bail};
 use colored::Colorize;
 
-use crate::storage::{Storage, get_data_file_path};
+use crate::storage::{Storage, get_data_file_path, json};
 use crate::sync::{config, git};
 
 /// Subcommand variants for `todo sync`.
@@ -209,9 +209,9 @@ fn pull(storage: &impl Storage) -> Result<()> {
 
         // remote_json capturado antes do git merge — lista limpa, sem concatenação
         git::PullResult::Merged(remote_json) => {
-            // 4. Parse do estado puro do remote
-            let remote_tasks: Vec<crate::models::Task> =
-                serde_json::from_str(&remote_json).context("Failed to parse remote todos.json")?;
+            // 4. Parse do estado puro do remote (suporta v1 bare array e v2 envelope)
+            let remote_tasks = json::parse_tasks_from_str(&remote_json)
+                .context("Failed to parse remote todos.json")?;
 
             // 5. Semantic merge: local vs remote (ambos limpos)
             let result = crate::sync::merge::merge(local_tasks, remote_tasks);
@@ -221,14 +221,17 @@ fn pull(storage: &impl Storage) -> Result<()> {
             git::commit(&data_dir, "sync: merge")?;
 
             print_merge_result(&result);
+
+            // 7. Purge automático de tombstones > 30 dias após sync bem-sucedido
+            purge_old_tombstones(storage);
         }
 
         git::PullResult::Conflict(remote_json) => {
             let ours_json = git::read_ours(&data_dir)?;
-            let ours: Vec<crate::models::Task> =
-                serde_json::from_str(&ours_json).context("Failed to parse local todos.json")?;
-            let theirs: Vec<crate::models::Task> =
-                serde_json::from_str(&remote_json).context("Failed to parse remote todos.json")?;
+            let ours = json::parse_tasks_from_str(&ours_json)
+                .context("Failed to parse local todos.json")?;
+            let theirs = json::parse_tasks_from_str(&remote_json)
+                .context("Failed to parse remote todos.json")?;
 
             let result = crate::sync::merge::merge(ours, theirs);
             storage.save(&result.tasks)?;
@@ -236,6 +239,9 @@ fn pull(storage: &impl Storage) -> Result<()> {
 
             println!("{} Conflict resolved via semantic merge", "✓".green());
             print_merge_result(&result);
+
+            // Purge automático de tombstones > 30 dias após sync bem-sucedido
+            purge_old_tombstones(storage);
         }
     }
 
@@ -294,6 +300,30 @@ fn status() -> Result<()> {
 
     println!();
     Ok(())
+}
+
+// ── auto-purge ────────────────────────────────────────────────────────────────
+
+/// Silently purges tombstones older than 30 days after a successful sync.
+///
+/// Runs without user interaction and without printing errors — purge is
+/// best-effort maintenance and should never interrupt the sync flow.
+fn purge_old_tombstones(storage: &impl Storage) {
+    const PURGE_DAYS: i64 = 30;
+    let cutoff = chrono::Utc::now() - chrono::Duration::days(PURGE_DAYS);
+
+    let Ok((mut tasks, mut projects, mut notes, mut resources)) = storage.load_all_with_resources()
+    else {
+        return;
+    };
+
+    tasks.retain(|t| t.deleted_at.is_none_or(|d| d > cutoff));
+    projects.retain(|p| p.deleted_at.is_none_or(|d| d > cutoff));
+    notes.retain(|n| n.deleted_at.is_none_or(|d| d > cutoff));
+    resources.retain(|r| r.deleted_at.is_none_or(|d| d > cutoff));
+
+    let _ = storage.save_all(&tasks, &projects, &notes);
+    let _ = storage.save_resources(&resources);
 }
 
 #[cfg(test)]

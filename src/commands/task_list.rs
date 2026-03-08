@@ -2,9 +2,9 @@
 
 use anyhow::Result;
 
-use crate::display::display_lists;
 use crate::error::TodoError;
 use crate::models::{DueFilter, Priority, Recurrence, RecurrenceFilter, SortBy, StatusFilter};
+use crate::render::display_lists;
 use crate::storage::Storage;
 
 #[allow(clippy::too_many_arguments)]
@@ -14,11 +14,12 @@ pub fn execute(
     priority: Option<Priority>,
     due: Option<DueFilter>,
     sort: Option<SortBy>,
-    tag: Option<String>,
+    tags: Vec<String>,
     project: Option<String>,
     recur: Option<RecurrenceFilter>,
 ) -> Result<()> {
-    let (all_tasks, projects, _) = storage.load_all()?;
+    let (all_tasks, projects, notes) = storage.load_all()?;
+    let resources = storage.load_resources()?;
 
     let mut indexed_tasks: Vec<(usize, &_)> = all_tasks
         .iter()
@@ -37,11 +38,12 @@ pub fn execute(
         indexed_tasks.retain(|(_, t)| t.matches_due_filter(due_filter));
     }
 
-    if let Some(tag_name) = &tag {
+    // AND semantics: task must contain ALL specified tags
+    if !tags.is_empty() {
         let count_before = indexed_tasks.len();
-        indexed_tasks.retain(|(_, t)| t.tags.contains(tag_name));
+        indexed_tasks.retain(|(_, t)| tags.iter().all(|tag| t.tags.contains(tag)));
         if indexed_tasks.is_empty() && count_before > 0 {
-            return Err(TodoError::TagNotFound(tag_name.to_owned()).into());
+            return Err(TodoError::TagNotFound(tags.join(", ")).into());
         }
     }
 
@@ -93,13 +95,20 @@ pub fn execute(
         }
     }
 
-    let title = determine_title(status, priority, due, project.as_deref(), recur);
+    let title = determine_title(status, priority, due, &tags, project.as_deref(), recur);
     let visible: Vec<_> = all_tasks
         .iter()
         .filter(|t| !t.is_deleted())
         .cloned()
         .collect();
-    display_lists(&indexed_tasks, &title, &visible, &projects);
+    display_lists(
+        &indexed_tasks,
+        &title,
+        &visible,
+        &projects,
+        &notes,
+        &resources,
+    );
     Ok(())
 }
 
@@ -107,11 +116,21 @@ fn determine_title(
     status: StatusFilter,
     priority: Option<Priority>,
     due: Option<DueFilter>,
+    tags: &[String],
     project: Option<&str>,
     recur: Option<RecurrenceFilter>,
 ) -> String {
     if let Some(p) = project {
         return format!("Tasks in project \"{}\"", p);
+    }
+
+    if !tags.is_empty() {
+        let tag_str = tags
+            .iter()
+            .map(|t| format!("#{}", t))
+            .collect::<Vec<_>>()
+            .join(" + ");
+        return format!("Tasks tagged {}", tag_str);
     }
 
     if let Some(recur_filter) = recur {

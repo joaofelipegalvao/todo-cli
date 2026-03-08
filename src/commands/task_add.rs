@@ -7,7 +7,7 @@ use crate::cli::AddArgs;
 use crate::error::TodoError;
 use crate::models::{Project, Task};
 use crate::storage::Storage;
-use crate::tag_normalizer::{collect_existing_tags, normalize_tags};
+use crate::utils::tag_normalizer::{collect_existing_tags, normalize_tags};
 use crate::{date_parser, validation};
 
 pub fn execute(storage: &impl Storage, args: AddArgs) -> Result<()> {

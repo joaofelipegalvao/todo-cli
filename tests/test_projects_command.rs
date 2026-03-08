@@ -12,14 +12,14 @@
 mod helpers;
 use helpers::TestEnv;
 use rustodo::cli::{AddArgs, EditArgs};
-use rustodo::commands::{add, done, edit, list, projects};
+use rustodo::commands::{project_list, task_add, task_done, task_edit, task_list};
 use rustodo::models::{Priority, SortBy, StatusFilter};
 use rustodo::storage::Storage;
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 fn add_task(env: &TestEnv, text: &str, project: Option<&str>) -> usize {
-    add::execute(
+    task_add::execute(
         env.storage(),
         AddArgs {
             text: text.to_string(),
@@ -42,7 +42,7 @@ fn test_projects_no_projects_fails() {
     let env = TestEnv::new();
     add_task(&env, "Task without project", None);
 
-    let result = projects::execute(env.storage());
+    let result = project_list::execute(env.storage());
     assert!(result.is_err());
     let msg = result.unwrap_err().to_string();
     assert!(msg.to_lowercase().contains("project"), "got: {}", msg);
@@ -52,7 +52,7 @@ fn test_projects_no_projects_fails() {
 fn test_projects_empty_storage_fails() {
     let env = TestEnv::new();
 
-    let result = projects::execute(env.storage());
+    let result = project_list::execute(env.storage());
     assert!(result.is_err());
 }
 
@@ -62,7 +62,7 @@ fn test_projects_single_project() {
     add_task(&env, "Task A", Some("Backend"));
     add_task(&env, "Task B", Some("Backend"));
 
-    let result = projects::execute(env.storage());
+    let result = project_list::execute(env.storage());
     assert!(result.is_ok());
 
     // Verify counts via storage
@@ -86,7 +86,7 @@ fn test_projects_multiple_projects() {
     add_task(&env, "Button component", Some("Frontend"));
     add_task(&env, "Write docs", Some("Docs"));
 
-    let result = projects::execute(env.storage());
+    let result = project_list::execute(env.storage());
     assert!(result.is_ok());
 
     let projects = env.storage().load_projects().unwrap();
@@ -101,7 +101,7 @@ fn test_projects_pending_and_done_counts() {
     add_task(&env, "Task B", Some("Backend"));
     add_task(&env, "Task C", Some("Backend"));
 
-    done::execute(env.storage(), 1).unwrap();
+    task_done::execute(env.storage(), 1).unwrap();
 
     let tasks = env.load_tasks();
     let projects = env.storage().load_projects().unwrap();
@@ -129,7 +129,7 @@ fn test_projects_mixed_with_and_without_project() {
     add_task(&env, "Task without project", None);
     add_task(&env, "Another without project", None);
 
-    let result = projects::execute(env.storage());
+    let result = project_list::execute(env.storage());
     assert!(result.is_ok());
 
     // Only 1 project should exist
@@ -146,10 +146,10 @@ fn test_projects_all_tasks_completed() {
     add_task(&env, "Task A", Some("Backend"));
     add_task(&env, "Task B", Some("Backend"));
 
-    done::execute(env.storage(), 1).unwrap();
-    done::execute(env.storage(), 2).unwrap();
+    task_done::execute(env.storage(), 1).unwrap();
+    task_done::execute(env.storage(), 2).unwrap();
 
-    let result = projects::execute(env.storage());
+    let result = project_list::execute(env.storage());
     assert!(result.is_ok());
 
     let tasks = env.load_tasks();
@@ -175,13 +175,13 @@ fn test_list_filter_by_project() {
     add_task(&env, "Frontend task", Some("Frontend"));
     add_task(&env, "No project task", None);
 
-    let result = list::execute(
+    let result = task_list::execute(
         env.storage(),
         StatusFilter::All,
         None,
         None,
         None,
-        None,
+        vec![],
         Some("Backend".to_string()),
         None,
     );
@@ -194,13 +194,13 @@ fn test_list_filter_by_project_case_insensitive() {
     add_task(&env, "Backend task", Some("Backend"));
 
     // lowercase "backend" should match "Backend"
-    let result = list::execute(
+    let result = task_list::execute(
         env.storage(),
         StatusFilter::All,
         None,
         None,
         None,
-        None,
+        vec![],
         Some("backend".to_string()),
         None,
     );
@@ -212,13 +212,13 @@ fn test_list_filter_by_nonexistent_project_fails() {
     let env = TestEnv::new();
     add_task(&env, "Task", Some("Backend"));
 
-    let result = list::execute(
+    let result = task_list::execute(
         env.storage(),
         StatusFilter::All,
         None,
         None,
         None,
-        None,
+        vec![],
         Some("Nonexistent".to_string()),
         None,
     );
@@ -231,15 +231,15 @@ fn test_list_filter_project_with_status() {
     add_task(&env, "Done task", Some("Backend"));
     add_task(&env, "Pending task", Some("Backend"));
 
-    done::execute(env.storage(), 1).unwrap();
+    task_done::execute(env.storage(), 1).unwrap();
 
-    let result = list::execute(
+    let result = task_list::execute(
         env.storage(),
         StatusFilter::Pending,
         None,
         None,
         None,
-        None,
+        vec![],
         Some("Backend".to_string()),
         None,
     );
@@ -252,7 +252,7 @@ fn test_list_filter_project_with_sort() {
 
     let env = TestEnv::new();
 
-    add::execute(
+    task_add::execute(
         env.storage(),
         AddArgs {
             text: "Later task".to_string(),
@@ -266,7 +266,7 @@ fn test_list_filter_project_with_sort() {
     )
     .unwrap();
 
-    add::execute(
+    task_add::execute(
         env.storage(),
         AddArgs {
             text: "Earlier task".to_string(),
@@ -280,13 +280,13 @@ fn test_list_filter_project_with_sort() {
     )
     .unwrap();
 
-    let result = list::execute(
+    let result = task_list::execute(
         env.storage(),
         StatusFilter::All,
         None,
         None,
         Some(SortBy::Due),
-        None,
+        vec![],
         Some("Backend".to_string()),
         None,
     );
@@ -300,7 +300,7 @@ fn test_edit_assign_project() {
     let env = TestEnv::new();
     add_task(&env, "Task without project", None);
 
-    let result = edit::execute(
+    let result = task_edit::execute(
         env.storage(),
         EditArgs {
             id: 1,
@@ -335,7 +335,7 @@ fn test_edit_change_project() {
     let env = TestEnv::new();
     add_task(&env, "Task", Some("Backend"));
 
-    let result = edit::execute(
+    let result = task_edit::execute(
         env.storage(),
         EditArgs {
             id: 1,
@@ -370,7 +370,7 @@ fn test_edit_clear_project() {
     let env = TestEnv::new();
     add_task(&env, "Task", Some("Backend"));
 
-    let result = edit::execute(
+    let result = task_edit::execute(
         env.storage(),
         EditArgs {
             id: 1,
@@ -401,7 +401,7 @@ fn test_edit_no_change_when_same_project() {
     add_task(&env, "Task", Some("Backend"));
 
     // Setting to same value should report "no changes"
-    let result = edit::execute(
+    let result = task_edit::execute(
         env.storage(),
         EditArgs {
             id: 1,
@@ -429,7 +429,7 @@ fn test_edit_no_change_when_same_project() {
 fn test_add_empty_project_name_fails() {
     let env = TestEnv::new();
 
-    let result = add::execute(
+    let result = task_add::execute(
         env.storage(),
         AddArgs {
             text: "Task".to_string(),
@@ -449,7 +449,7 @@ fn test_add_empty_project_name_fails() {
 fn test_add_project_name_too_long_fails() {
     let env = TestEnv::new();
 
-    let result = add::execute(
+    let result = task_add::execute(
         env.storage(),
         AddArgs {
             text: "Task".to_string(),
@@ -469,7 +469,7 @@ fn test_add_project_name_too_long_fails() {
 fn test_add_project_name_exactly_max_length_ok() {
     let env = TestEnv::new();
 
-    let result = add::execute(
+    let result = task_add::execute(
         env.storage(),
         AddArgs {
             text: "Task".to_string(),

@@ -9,24 +9,23 @@
 //! | [`cli`] | Command-line argument definitions (clap) |
 //! | [`commands`] | One submodule per CLI command |
 //! | [`date_parser`] | Natural language and strict date parsing |
-//! | [`display`] | Table rendering and formatting |
+//! | [`render`] | Table rendering and formatting |
 //! | [`error`] | Typed error variants via `thiserror` |
 //! | [`models`] | Core domain types: `Task`, `Priority`, `Recurrence` |
+//! | [`services`] | Domain services: tag aggregation and cross-entity logic |
 //! | [`storage`] | Storage trait with JSON and in-memory implementations |
-//! | [`tag_normalizer`] | Fuzzy tag normalization with Levenshtein distance |
 //! | [`tui`] | Terminal User Interface (Ratatui) |
-//! | [`utils`] | Shared utilities (interactive confirmation prompt) |
 //! | [`validation`] | Input validation for task fields |
 
 pub mod cli;
 pub mod commands;
 pub mod date_parser;
-pub mod display;
 pub mod error;
 pub mod models;
+pub mod render;
+pub mod services;
 pub mod storage;
 pub mod sync;
-pub mod tag_normalizer;
 pub mod tui;
 pub mod utils;
 pub mod validation;

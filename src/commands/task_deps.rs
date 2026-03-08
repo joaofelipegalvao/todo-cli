@@ -13,7 +13,7 @@ use crate::validation::{validate_task_id, visible_indices};
 
 pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     let tasks = storage.load()?;
-    let vis = visible_indices(&tasks);
+    let vis = visible_indices(&tasks, |t| t.is_deleted());
     validate_task_id(id, vis.len())?;
 
     let real_index = vis[id - 1];
@@ -102,7 +102,7 @@ pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
             })
             .collect::<Vec<_>>()
             .join(", ");
-        println!("  {} Blocked by: {}", "[~]".red(), ids.red());
+        println!("  Blocked by: {}", ids.red());
     } else if !task.depends_on.is_empty() {
         println!("  {} All dependencies satisfied", "✓".green());
     }

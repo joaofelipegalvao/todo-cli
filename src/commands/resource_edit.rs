@@ -38,6 +38,19 @@ pub fn execute(storage: &impl Storage, args: ResourceEditArgs) -> Result<()> {
         }
     }
 
+    // ── type ──────────────────────────────────────────────────────────────────
+    if args.clear_type {
+        if resource.resource_type.is_some() {
+            resource.resource_type = None;
+            changes.push("type → cleared".dimmed().to_string());
+        }
+    } else if let Some(new_type) = args.r#type
+        && resource.resource_type != Some(new_type)
+    {
+        resource.resource_type = Some(new_type);
+        changes.push(format!("type → {}", new_type.label().cyan()));
+    }
+
     // ── url ───────────────────────────────────────────────────────────────────
     if args.clear_url {
         if resource.url.is_some() {

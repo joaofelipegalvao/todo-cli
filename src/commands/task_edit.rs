@@ -29,7 +29,7 @@ fn execute_inner(storage: &impl Storage, args: EditArgs, silent: bool) -> Result
     };
 
     let mut tasks = storage.load()?;
-    let vis = visible_indices(&tasks);
+    let vis = visible_indices(&tasks, |t| t.is_deleted());
     validate_task_id(args.id, vis.len())?;
     let real_index = vis[args.id - 1];
 

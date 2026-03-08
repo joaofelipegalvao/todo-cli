@@ -5,7 +5,7 @@
 //! | [`Task`]     | A single todo item with all its metadata |
 //! | [`Note`]     | A free-form documentation note, optionally linked to a Project, Task, or Resources |
 //! | [`Project`]  | A project entity that groups tasks and notes |
-//! | [`Resource`] | An independent external reference (URL, doc, asset) attached via Notes |
+//! | [`ResourceType`] | Docs / Article / Video / Repo / Crate / Book / Spec / Tool |
 //! | [`Priority`]         | High / Medium / Low priority levels |
 //! | [`Recurrence`]       | Daily / Weekly / Monthly repeat patterns |
 //! | [`StatusFilter`]     | Filter tasks by completion status |
@@ -26,6 +26,6 @@ pub use note::Note;
 pub use priority::Priority;
 pub use project::{Difficulty, Project};
 pub use recurrence::Recurrence;
-pub use resource::Resource;
+pub use resource::{Resource, ResourceType};
 pub(crate) use task::detect_cycle;
 pub use task::{Task, count_by_project};

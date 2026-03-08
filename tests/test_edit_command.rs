@@ -4,7 +4,7 @@ mod helpers;
 
 use helpers::{TestEnv, days_from_now};
 use rustodo::cli::{AddArgs, EditArgs};
-use rustodo::commands::{add, edit};
+use rustodo::commands::{task_add, task_edit};
 use rustodo::models::Priority;
 
 #[test]
@@ -12,7 +12,7 @@ fn test_edit_text() {
     let env = TestEnv::new();
 
     // Setup: Create task
-    add::execute(
+    task_add::execute(
         env.storage(),
         AddArgs {
             text: "Old text".to_string(),
@@ -27,7 +27,7 @@ fn test_edit_text() {
     .unwrap();
 
     // Execute: Edit text
-    let result = edit::execute(
+    let result = task_edit::execute(
         env.storage(),
         EditArgs {
             id: 1, // ID
@@ -57,7 +57,7 @@ fn test_edit_text() {
 fn test_edit_priority() {
     let env = TestEnv::new();
 
-    add::execute(
+    task_add::execute(
         env.storage(),
         AddArgs {
             text: "Task".to_string(),
@@ -71,7 +71,7 @@ fn test_edit_priority() {
     )
     .unwrap();
 
-    let result = edit::execute(
+    let result = task_edit::execute(
         env.storage(),
         EditArgs {
             id: 1,
@@ -100,7 +100,7 @@ fn test_edit_priority() {
 fn test_edit_add_invalid_tag_fails() {
     let env = TestEnv::new();
 
-    add::execute(
+    task_add::execute(
         env.storage(),
         AddArgs {
             text: "Task".to_string(),
@@ -114,7 +114,7 @@ fn test_edit_add_invalid_tag_fails() {
     )
     .unwrap();
 
-    let result = edit::execute(
+    let result = task_edit::execute(
         env.storage(),
         EditArgs {
             id: 1,
@@ -147,7 +147,7 @@ fn test_edit_add_tags_preserves_existing() {
     let env = TestEnv::new();
 
     // Setup: Task with one tag
-    add::execute(
+    task_add::execute(
         env.storage(),
         AddArgs {
             text: "Task".to_string(),
@@ -162,7 +162,7 @@ fn test_edit_add_tags_preserves_existing() {
     .unwrap();
 
     // Execute: Add another tag
-    let result = edit::execute(
+    let result = task_edit::execute(
         env.storage(),
         EditArgs {
             id: 1,
@@ -195,7 +195,7 @@ fn test_edit_remove_specific_tag() {
     let env = TestEnv::new();
 
     // Setup: Task with multiple tags
-    add::execute(
+    task_add::execute(
         env.storage(),
         AddArgs {
             text: "Task".to_string(),
@@ -213,7 +213,7 @@ fn test_edit_remove_specific_tag() {
     )
     .unwrap();
 
-    let result = edit::execute(
+    let result = task_edit::execute(
         env.storage(),
         EditArgs {
             id: 1,
@@ -247,7 +247,7 @@ fn test_edit_add_and_remove_tags_simultaneously() {
     let env = TestEnv::new();
 
     // Setup
-    add::execute(
+    task_add::execute(
         env.storage(),
         AddArgs {
             text: "Task".to_string(),
@@ -261,7 +261,7 @@ fn test_edit_add_and_remove_tags_simultaneously() {
     )
     .unwrap();
 
-    let result = edit::execute(
+    let result = task_edit::execute(
         env.storage(),
         EditArgs {
             id: 1,
@@ -295,7 +295,7 @@ fn test_edit_clear_all_tags() {
     let env = TestEnv::new();
 
     // Setup
-    add::execute(
+    task_add::execute(
         env.storage(),
         AddArgs {
             text: "Task".to_string(),
@@ -309,7 +309,7 @@ fn test_edit_clear_all_tags() {
     )
     .unwrap();
 
-    let result = edit::execute(
+    let result = task_edit::execute(
         env.storage(),
         EditArgs {
             id: 1,
@@ -339,7 +339,7 @@ fn test_edit_clear_all_tags() {
 fn test_edit_remove_nonexistent_tag_fails() {
     let env = TestEnv::new();
 
-    add::execute(
+    task_add::execute(
         env.storage(),
         AddArgs {
             text: "Task".to_string(),
@@ -354,7 +354,7 @@ fn test_edit_remove_nonexistent_tag_fails() {
     .unwrap();
 
     // Execute: Try to remove tag that doesn't exist
-    let result = edit::execute(
+    let result = task_edit::execute(
         env.storage(),
         EditArgs {
             id: 1,
@@ -388,7 +388,7 @@ fn test_edit_invalid_id() {
     let env = TestEnv::new();
 
     // No tasks exist
-    let result = edit::execute(
+    let result = task_edit::execute(
         env.storage(),
         EditArgs {
             id: 99,
@@ -415,7 +415,7 @@ fn test_edit_invalid_id() {
 fn test_edit_due_date() {
     let env = TestEnv::new();
 
-    add::execute(
+    task_add::execute(
         env.storage(),
         AddArgs {
             text: "Task".to_string(),
@@ -431,7 +431,7 @@ fn test_edit_due_date() {
 
     let due_date = days_from_now(7);
 
-    let result = edit::execute(
+    let result = task_edit::execute(
         env.storage(),
         EditArgs {
             id: 1,
@@ -461,7 +461,7 @@ fn test_edit_clear_due_date() {
     let env = TestEnv::new();
 
     let due_date = days_from_now(7);
-    add::execute(
+    task_add::execute(
         env.storage(),
         AddArgs {
             text: "Task".to_string(),
@@ -475,7 +475,7 @@ fn test_edit_clear_due_date() {
     )
     .unwrap();
 
-    let result = edit::execute(
+    let result = task_edit::execute(
         env.storage(),
         EditArgs {
             id: 1,

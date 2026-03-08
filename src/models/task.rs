@@ -67,8 +67,8 @@ pub struct Task {
     pub project_name_legacy: Option<String>,
     /// Optional due date for deadline tracking
     pub due_date: Option<NaiveDate>,
-    /// Date when the task was created
-    pub created_at: NaiveDate,
+    /// Timestamp when the task was created (UTC).
+    pub created_at: DateTime<Utc>,
     /// Optional recurrence pattern (daily, weekly, monthly)
     pub recurrence: Option<Recurrence>,
     /// ID of the parent task (for recurring task chains)
@@ -163,7 +163,7 @@ impl Task {
             project_id,
             project_name_legacy: None,
             due_date,
-            created_at: Local::now().naive_local().date(),
+            created_at: Utc::now(),
             recurrence,
             parent_id: None,
             depends_on: Vec::new(),

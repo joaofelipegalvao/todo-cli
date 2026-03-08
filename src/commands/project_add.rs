@@ -30,20 +30,28 @@ pub fn execute(storage: &impl Storage, args: ProjectAddArgs) -> Result<()> {
         project.difficulty = difficulty;
     }
     if !args.tech.is_empty() {
-        project.tech = args.tech;
+        project.tech = args
+            .tech
+            .into_iter()
+            .map(|t| t.trim().to_string())
+            .filter(|t| !t.is_empty())
+            .collect();
     }
     if let Some(d) = due {
         project.due_date = Some(d);
     }
 
-    let id = projects.len() + 1;
+    // Use the visible count for the displayed ID so it matches what the user
+    // sees in `project list`, regardless of how many soft-deleted projects
+    // exist in storage.
+    let visible_id = projects.iter().filter(|p| !p.is_deleted()).count() + 1;
     projects.push(project);
     storage.save_projects(&projects)?;
 
     println!(
         "{} Added project #{}: {}",
         "✓".green(),
-        id,
+        visible_id,
         args.name.cyan()
     );
     Ok(())

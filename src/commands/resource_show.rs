@@ -8,40 +8,33 @@ use crate::storage::Storage;
 pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     let (_, _, notes, resources) = storage.load_all_with_resources()?;
 
-    let visible: Vec<_> = resources.iter().filter(|r| !r.is_deleted()).collect();
+    let visible_resources: Vec<_> = resources.iter().filter(|r| !r.is_deleted()).collect();
 
-    let resource = visible
+    let resource = visible_resources
         .get(id.saturating_sub(1))
         .ok_or_else(|| anyhow::anyhow!("Resource #{} not found", id))?;
 
+    let visible_notes: Vec<_> = notes.iter().filter(|n| !n.is_deleted()).collect();
+
     // ── Header ────────────────────────────────────────────────────────────────
     println!();
-    println!("  {} {}", "Resource:".dimmed(), resource.title.bold());
+    println!(
+        "  {}",
+        format!("Resource #{}: {}", id, resource.title)
+            .bold()
+            .cyan()
+    );
     println!("  {}", "─".repeat(50).dimmed());
 
-    // ── URL ───────────────────────────────────────────────────────────────────
-    if let Some(ref url) = resource.url {
-        println!();
-        println!("  {} {}", "URL:".dimmed(), url.cyan().underline());
+    // ── Metadata (Type + Tags first, then URL) ────────────────────────────────
+    if let Some(rt) = resource.resource_type {
+        println!("  {}  {}", "Type".dimmed(), rt.label().yellow());
     }
-
-    // ── Description ───────────────────────────────────────────────────────────
-    if let Some(ref desc) = resource.description {
-        println!();
-        for line in desc.lines() {
-            println!("  {}", line);
-        }
-    }
-
-    println!();
-
-    // ── Metadata ──────────────────────────────────────────────────────────────
-    println!("  {}", "─".repeat(50).dimmed());
 
     if !resource.tags.is_empty() {
         println!(
-            "  {} {}",
-            "Tags:".dimmed(),
+            "  {}  {}",
+            "Tags".dimmed(),
             resource
                 .tags
                 .iter()
@@ -52,24 +45,54 @@ pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
         );
     }
 
+    if let Some(ref url) = resource.url {
+        println!("  {}  {}", "URL".dimmed(), url.cyan().underline());
+    }
+
+    if let Some(ref desc) = resource.description {
+        println!();
+        for line in desc.lines() {
+            println!("  {}", line);
+        }
+    }
+
+    println!();
+    println!("  {}", "─".repeat(50).dimmed());
+
     // ── Notes that reference this resource ────────────────────────────────────
-    let referencing: Vec<_> = notes
+    let referencing: Vec<(usize, _)> = visible_notes
         .iter()
-        .filter(|n| !n.is_deleted() && n.references_resource(resource.uuid))
+        .enumerate()
+        .filter(|(_, n)| n.references_resource(resource.uuid))
+        .map(|(i, n)| (i + 1, n))
         .collect();
 
     if !referencing.is_empty() {
-        println!("  {} {}", "Used in notes:".dimmed(), referencing.len());
-        for note in &referencing {
+        println!();
+        println!(
+            "  {}  {}",
+            "Used in notes".dimmed(),
+            referencing.len().to_string().dimmed()
+        );
+        for (note_id, note) in &referencing {
             let preview = note.title.as_deref().unwrap_or_else(|| {
                 let b = note.body.as_str();
                 if b.len() > 50 { &b[..50] } else { b }
             });
-            println!("    {} {}", "·".dimmed(), preview.dimmed());
+            println!(
+                "    {}  {}",
+                format!("#{}", note_id).dimmed(),
+                preview.bright_white()
+            );
         }
     }
 
-    println!("  {} {}", "Created:".dimmed(), resource.created_at);
+    println!();
+    println!(
+        "  {}  {}",
+        "Created".dimmed(),
+        resource.created_at.format("%Y-%m-%d")
+    );
     println!();
 
     Ok(())

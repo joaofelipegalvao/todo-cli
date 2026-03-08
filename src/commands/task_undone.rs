@@ -21,8 +21,9 @@ pub fn execute_silent(storage: &impl Storage, id: usize) -> Result<String> {
 
 fn execute_inner(storage: &impl Storage, id: usize, silent: bool) -> Result<String> {
     let mut tasks = storage.load()?;
-    let vis = visible_indices(&tasks);
+    let vis = visible_indices(&tasks, |t| t.is_deleted());
     validate_task_id(id, vis.len())?;
+
     let index = vis[id - 1];
 
     if !tasks[index].completed {
@@ -37,7 +38,8 @@ fn execute_inner(storage: &impl Storage, id: usize, silent: bool) -> Result<Stri
     storage.save(&tasks)?;
 
     if !silent {
-        println!("{}", "✓ Task unmarked".yellow());
+        let id_colored = format!("#{}", id).yellow();
+        println!("Task {} marked as pending.", id_colored);
     }
 
     Ok(format!("Task #{} marked as pending.", id))

@@ -10,11 +10,14 @@ use crate::storage::Storage;
 pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     let (tasks, projects, notes, resources) = storage.load_all_with_resources()?;
 
-    let visible: Vec<_> = notes.iter().filter(|n| !n.is_deleted()).collect();
+    let visible_notes: Vec<_> = notes.iter().filter(|n| !n.is_deleted()).collect();
 
-    let note = visible
+    let note = visible_notes
         .get(id.saturating_sub(1))
         .ok_or_else(|| anyhow::anyhow!("Note #{} not found", id))?;
+
+    // Build global resource ID lookup
+    let visible_resources: Vec<_> = resources.iter().filter(|r| !r.is_deleted()).collect();
 
     // ── Header ────────────────────────────────────────────────────────────────
     println!();
@@ -65,22 +68,39 @@ pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
         println!("  {} {}", "Task:".dimmed(), task.text.cyan());
     }
 
-    // ── Resources ─────────────────────────────────────────────────────────────
+    // ── Resources (with global IDs) ───────────────────────────────────────────
     if !note.resource_ids.is_empty() {
         println!("  {}", "Resources:".dimmed());
         for rid in &note.resource_ids {
-            if let Some(resource) = resources.iter().find(|r| r.uuid == *rid && !r.is_deleted()) {
+            // Find global display ID = position in visible_resources
+            let found = visible_resources
+                .iter()
+                .enumerate()
+                .find(|(_, r)| r.uuid == *rid);
+
+            if let Some((idx, resource)) = found {
+                let resource_id = idx + 1;
                 let url_part = resource
                     .url
                     .as_deref()
                     .map(|u| format!(" — {}", u.dimmed()))
                     .unwrap_or_default();
-                println!("    {} {}{}", "·".dimmed(), resource.title.cyan(), url_part);
+                println!(
+                    "    {} {} {}{}",
+                    "·".dimmed(),
+                    format!("#{}", resource_id).dimmed(),
+                    resource.title.cyan(),
+                    url_part
+                );
             }
         }
     }
 
-    println!("  {} {}", "Created:".dimmed(), note.created_at);
+    println!(
+        "  {} {}",
+        "Created:".dimmed(),
+        note.created_at.format("%Y-%m-%d")
+    );
     println!();
 
     Ok(())

@@ -4,14 +4,14 @@ mod helpers;
 
 use helpers::{TestEnv, days_from_now};
 use rustodo::cli::AddArgs;
-use rustodo::commands::add;
+use rustodo::commands::task_add;
 use rustodo::models::{Priority, Recurrence};
 
 #[test]
 fn test_add_simple_task() {
     let env = TestEnv::new();
 
-    let result = add::execute(
+    let result = task_add::execute(
         env.storage(),
         AddArgs {
             text: "Buy milk".to_string(),
@@ -42,7 +42,7 @@ fn test_add_task_with_all_metadata() {
 
     let due_date = days_from_now(7);
 
-    let result = add::execute(
+    let result = task_add::execute(
         env.storage(),
         AddArgs {
             text: "Complete project".to_string(),
@@ -72,7 +72,7 @@ fn test_add_task_with_all_metadata() {
 fn test_add_multiple_tasks_preserves_order() {
     let env = TestEnv::new();
 
-    add::execute(
+    task_add::execute(
         env.storage(),
         AddArgs {
             text: "Task 1".to_string(),
@@ -85,7 +85,7 @@ fn test_add_multiple_tasks_preserves_order() {
         },
     )
     .unwrap();
-    add::execute(
+    task_add::execute(
         env.storage(),
         AddArgs {
             text: "Task 2".to_string(),
@@ -98,7 +98,7 @@ fn test_add_multiple_tasks_preserves_order() {
         },
     )
     .unwrap();
-    add::execute(
+    task_add::execute(
         env.storage(),
         AddArgs {
             text: "Task 3".to_string(),
@@ -123,7 +123,7 @@ fn test_add_multiple_tasks_preserves_order() {
 fn test_add_recurring_task_requires_due_date() {
     let env = TestEnv::new();
 
-    let result = add::execute(
+    let result = task_add::execute(
         env.storage(),
         AddArgs {
             text: "Daily standup".to_string(),
@@ -146,7 +146,7 @@ fn test_add_recurring_task_requires_due_date() {
 fn test_add_empty_text_fails() {
     let env = TestEnv::new();
 
-    let result = add::execute(
+    let result = task_add::execute(
         env.storage(),
         AddArgs {
             text: "".to_string(),
@@ -167,7 +167,7 @@ fn test_add_empty_text_fails() {
 fn test_add_whitespace_only_text_fails() {
     let env = TestEnv::new();
 
-    let result = add::execute(
+    let result = task_add::execute(
         env.storage(),
         AddArgs {
             text: "   \t\n  ".to_string(),
@@ -188,7 +188,7 @@ fn test_add_with_invalid_tags_fails() {
     let env = TestEnv::new();
 
     // Tag with spaces
-    let result = add::execute(
+    let result = task_add::execute(
         env.storage(),
         AddArgs {
             text: "Task".to_string(),
@@ -214,7 +214,7 @@ fn test_add_with_invalid_tags_fails() {
 fn test_add_with_duplicate_tags_fails() {
     let env = TestEnv::new();
 
-    let result = add::execute(
+    let result = task_add::execute(
         env.storage(),
         AddArgs {
             text: "Task".to_string(),

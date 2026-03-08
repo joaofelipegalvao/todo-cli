@@ -13,14 +13,14 @@
 mod helpers;
 use helpers::TestEnv;
 use rustodo::cli::AddArgs;
-use rustodo::commands::{add, done, search};
+use rustodo::commands::{search, task_add, task_done};
 use rustodo::models::{Priority, StatusFilter};
 use rustodo::storage::Storage;
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 fn add_task(env: &TestEnv, text: &str, tags: Vec<&str>, project: Option<&str>) -> usize {
-    add::execute(
+    task_add::execute(
         env.storage(),
         AddArgs {
             text: text.to_string(),
@@ -51,7 +51,7 @@ fn test_search_finds_matching_task() {
     let result = search::execute(
         env.storage(),
         "milk".to_string(),
-        None,
+        vec![],
         None,
         StatusFilter::All,
     );
@@ -67,7 +67,7 @@ fn test_search_partial_match() {
     let result = search::execute(
         env.storage(),
         "auth".to_string(),
-        None,
+        vec![],
         None,
         StatusFilter::All,
     );
@@ -82,7 +82,7 @@ fn test_search_case_insensitive() {
     let result = search::execute(
         env.storage(),
         "milk".to_string(),
-        None,
+        vec![],
         None,
         StatusFilter::All,
     );
@@ -97,7 +97,7 @@ fn test_search_no_results_fails() {
     let result = search::execute(
         env.storage(),
         "nonexistent".to_string(),
-        None,
+        vec![],
         None,
         StatusFilter::All,
     );
@@ -111,7 +111,7 @@ fn test_search_empty_storage_fails() {
     let result = search::execute(
         env.storage(),
         "anything".to_string(),
-        None,
+        vec![],
         None,
         StatusFilter::All,
     );
@@ -126,12 +126,12 @@ fn test_search_status_all_returns_both() {
     add_simple(&env, "Buy milk");
     add_simple(&env, "Buy bread");
 
-    done::execute(env.storage(), 1).unwrap();
+    task_done::execute(env.storage(), 1).unwrap();
 
     let result = search::execute(
         env.storage(),
         "buy".to_string(),
-        None,
+        vec![],
         None,
         StatusFilter::All,
     );
@@ -152,12 +152,12 @@ fn test_search_status_pending_excludes_done() {
     add_simple(&env, "Buy milk");
     add_simple(&env, "Buy bread");
 
-    done::execute(env.storage(), 1).unwrap();
+    task_done::execute(env.storage(), 1).unwrap();
 
     let result = search::execute(
         env.storage(),
         "buy".to_string(),
-        None,
+        vec![],
         None,
         StatusFilter::Pending,
     );
@@ -179,12 +179,12 @@ fn test_search_status_done_excludes_pending() {
     add_simple(&env, "Buy milk");
     add_simple(&env, "Buy bread");
 
-    done::execute(env.storage(), 1).unwrap();
+    task_done::execute(env.storage(), 1).unwrap();
 
     let result = search::execute(
         env.storage(),
         "buy".to_string(),
-        None,
+        vec![],
         None,
         StatusFilter::Done,
     );
@@ -204,13 +204,13 @@ fn test_search_status_pending_no_results_fails() {
     let env = TestEnv::new();
     add_simple(&env, "Buy milk");
 
-    done::execute(env.storage(), 1).unwrap();
+    task_done::execute(env.storage(), 1).unwrap();
 
     // All "buy" tasks are done — pending search should fail
     let result = search::execute(
         env.storage(),
         "buy".to_string(),
-        None,
+        vec![],
         None,
         StatusFilter::Pending,
     );
@@ -226,7 +226,7 @@ fn test_search_status_done_no_results_fails() {
     let result = search::execute(
         env.storage(),
         "buy".to_string(),
-        None,
+        vec![],
         None,
         StatusFilter::Done,
     );
@@ -244,7 +244,7 @@ fn test_search_with_tag_filter() {
     let result = search::execute(
         env.storage(),
         "fix bug".to_string(),
-        Some("work".to_string()),
+        vec!["work".to_string()],
         None,
         StatusFilter::All,
     );
@@ -269,7 +269,7 @@ fn test_search_tag_filter_no_match_fails() {
     let result = search::execute(
         env.storage(),
         "fix bug".to_string(),
-        Some("personal".to_string()), // tag doesn't exist on matching task
+        vec!["personal".to_string()], // tag doesn't exist on matching task
         None,
         StatusFilter::All,
     );
@@ -287,7 +287,7 @@ fn test_search_with_project_filter() {
     let result = search::execute(
         env.storage(),
         "fix bug".to_string(),
-        None,
+        vec![],
         Some("Backend".to_string()),
         StatusFilter::All,
     );
@@ -314,7 +314,7 @@ fn test_search_project_filter_case_insensitive() {
     let result = search::execute(
         env.storage(),
         "deploy".to_string(),
-        None,
+        vec![],
         Some("backend".to_string()), // lowercase
         StatusFilter::All,
     );
@@ -330,13 +330,13 @@ fn test_search_tag_and_project_and_status() {
     add_task(&env, "Fix minor bug", vec!["work"], Some("Backend"));
     add_task(&env, "Fix UI bug", vec!["urgent"], Some("Frontend"));
 
-    done::execute(env.storage(), 1).unwrap();
+    task_done::execute(env.storage(), 1).unwrap();
 
     // Pending + urgent + Backend
     let result = search::execute(
         env.storage(),
         "fix".to_string(),
-        Some("urgent".to_string()),
+        vec!["urgent".to_string()],
         Some("Backend".to_string()),
         StatusFilter::Pending,
     );

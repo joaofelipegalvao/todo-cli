@@ -104,6 +104,10 @@ pub fn collect_existing_tags(tasks: &[crate::models::Task]) -> Vec<String> {
     tags
 }
 
+/// Check whether a tag list contains a given tag (case-insensitive, no allocation).
+pub fn has_tag(tags: &[String], tag: &str) -> bool {
+    tags.iter().any(|t| t.eq_ignore_ascii_case(tag))
+}
 #[cfg(test)]
 mod tests {
     use super::*;

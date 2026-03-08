@@ -8,16 +8,23 @@ use crate::models::{Recurrence, Task};
 use chrono::NaiveDate;
 use uuid::Uuid;
 
-/// Returns the indices (into the full `tasks` slice) of all non-deleted tasks,
+/// Returns the indices (into `items`) of all non-deleted entries,
 /// preserving their original order.
 ///
-/// Use this to map a user-facing 1-based ID (counting only visible tasks)
-/// back to a real position in the storage array.
-pub fn visible_indices(tasks: &[Task]) -> Vec<usize> {
-    tasks
+/// Works with any type — [`Task`], [`Project`], [`Note`], [`Resource`] — as
+/// long as you supply an `is_deleted` predicate.
+///
+/// Use this to map a user-facing 1-based ID (counting only visible items)
+/// back to a real position in the storage slice.
+///
+/// [`Project`]: crate::models::Project
+/// [`Note`]: crate::models::Note
+/// [`Resource`]: crate::models::Resource
+pub fn visible_indices<T>(items: &[T], is_deleted: impl Fn(&T) -> bool) -> Vec<usize> {
+    items
         .iter()
         .enumerate()
-        .filter(|(_, t)| !t.is_deleted())
+        .filter(|(_, item)| !is_deleted(item))
         .map(|(i, _)| i)
         .collect()
 }
@@ -28,7 +35,7 @@ pub fn visible_indices(tasks: &[Task]) -> Vec<usize> {
 /// # Errors
 /// Returns `TodoError::InvalidTaskId` if the ID is out of range.
 pub fn resolve_uuid_visible(id: usize, tasks: &[Task]) -> Result<Uuid, TodoError> {
-    let indices = visible_indices(tasks);
+    let indices = visible_indices(tasks, |t| t.is_deleted());
     validate_task_id(id, indices.len())?;
     Ok(tasks[indices[id - 1]].uuid)
 }
@@ -118,12 +125,10 @@ pub fn validate_tags(tags: &[String]) -> Result<(), TodoError> {
     for tag in tags {
         let trimmed = tag.trim();
 
-        // Empty check
         if trimmed.is_empty() {
             return Err(TodoError::EmptyTag);
         }
 
-        // Length check
         if trimmed.len() > MAX_TAG_LENGTH {
             return Err(TodoError::TagTooLong {
                 max: MAX_TAG_LENGTH,
@@ -131,7 +136,6 @@ pub fn validate_tags(tags: &[String]) -> Result<(), TodoError> {
             });
         }
 
-        // Format check: only alphanumeric, hyphen, underscore
         let valid_chars = trimmed
             .chars()
             .all(|c| c.is_alphanumeric() || c == '-' || c == '_');
@@ -143,7 +147,6 @@ pub fn validate_tags(tags: &[String]) -> Result<(), TodoError> {
         }
     }
 
-    // Duplicate check (case-insensitive)
     let mut seen = HashSet::new();
     for tag in tags {
         let lowercase = tag.to_lowercase();
@@ -258,14 +261,14 @@ mod tests {
     fn test_visible_indices_excludes_deleted() {
         let mut tasks = vec![make_task("A"), make_task("B"), make_task("C")];
         tasks[1].soft_delete();
-        let indices = visible_indices(&tasks);
+        let indices = visible_indices(&tasks, |t| t.is_deleted());
         assert_eq!(indices, vec![0, 2]);
     }
 
     #[test]
     fn test_visible_indices_all_visible() {
         let tasks = vec![make_task("A"), make_task("B")];
-        assert_eq!(visible_indices(&tasks), vec![0, 1]);
+        assert_eq!(visible_indices(&tasks, |t| t.is_deleted()), vec![0, 1]);
     }
 
     #[test]
@@ -273,7 +276,7 @@ mod tests {
         let mut tasks = vec![make_task("A"), make_task("B")];
         tasks[0].soft_delete();
         tasks[1].soft_delete();
-        assert!(visible_indices(&tasks).is_empty());
+        assert!(visible_indices(&tasks, |t| t.is_deleted()).is_empty());
     }
 
     #[test]
@@ -281,7 +284,7 @@ mod tests {
         let mut tasks = vec![make_task("A"), make_task("B"), make_task("C")];
         let uuid_a = tasks[0].uuid;
         let uuid_c = tasks[2].uuid;
-        tasks[1].soft_delete(); // visible: A=1, C=2
+        tasks[1].soft_delete();
 
         assert_eq!(resolve_uuid_visible(1, &tasks).unwrap(), uuid_a);
         assert_eq!(resolve_uuid_visible(2, &tasks).unwrap(), uuid_c);
@@ -328,18 +331,15 @@ mod tests {
         assert!(validate_task_text("   ").is_err());
         assert!(validate_task_text("\t\n").is_err());
 
-        // 501 characters
         let too_long = "x".repeat(501);
         assert!(validate_task_text(&too_long).is_err());
 
-        // 500 characters (OK)
         let exactly_max = "x".repeat(500);
         assert!(validate_task_text(&exactly_max).is_ok());
     }
 
     #[test]
     fn test_validate_tags() {
-        // Valid tags
         assert!(validate_tags(&["work".to_string()]).is_ok());
         assert!(validate_tags(&["work-urgent".to_string()]).is_ok());
         assert!(validate_tags(&["task_1".to_string()]).is_ok());
@@ -352,20 +352,16 @@ mod tests {
             .is_ok()
         );
 
-        // Empty tag
         assert!(validate_tags(&["".to_string()]).is_err());
         assert!(validate_tags(&["work".to_string(), "".to_string()]).is_err());
 
-        // Invalid characters
         assert!(validate_tags(&["work@home".to_string()]).is_err());
         assert!(validate_tags(&["tag with spaces".to_string()]).is_err());
         assert!(validate_tags(&["tag/slash".to_string()]).is_err());
 
-        // Too long
         let long_tag = "x".repeat(51);
         assert!(validate_tags(&[long_tag]).is_err());
 
-        // Duplicates (case-insensitive)
         assert!(validate_tags(&["work".to_string(), "work".to_string()]).is_err());
         assert!(validate_tags(&["work".to_string(), "Work".to_string()]).is_err());
         assert!(validate_tags(&["work".to_string(), "WORK".to_string()]).is_err());
@@ -379,19 +375,12 @@ mod tests {
         let yesterday = today - chrono::Duration::days(1);
         let tomorrow = today + chrono::Duration::days(1);
 
-        // Future dates always OK
         assert!(validate_due_date(Some(tomorrow), false).is_ok());
         assert!(validate_due_date(Some(tomorrow), true).is_ok());
-
-        // Today is OK
         assert!(validate_due_date(Some(today), false).is_ok());
         assert!(validate_due_date(Some(today), true).is_ok());
-
-        // Past dates: allowed only if allow_past = true
         assert!(validate_due_date(Some(yesterday), false).is_err());
         assert!(validate_due_date(Some(yesterday), true).is_ok());
-
-        // None is always OK
         assert!(validate_due_date(None, false).is_ok());
         assert!(validate_due_date(None, true).is_ok());
     }
@@ -403,17 +392,14 @@ mod tests {
         let today = Local::now().naive_local().date();
         let future = today + chrono::Duration::days(7);
 
-        // Recurrence without due date = error
         assert!(validate_recurrence(Some(Recurrence::Daily), None).is_err());
         assert!(validate_recurrence(Some(Recurrence::Weekly), None).is_err());
         assert!(validate_recurrence(Some(Recurrence::Monthly), None).is_err());
 
-        // Recurrence with due date = OK
         assert!(validate_recurrence(Some(Recurrence::Daily), Some(future)).is_ok());
         assert!(validate_recurrence(Some(Recurrence::Weekly), Some(future)).is_ok());
         assert!(validate_recurrence(Some(Recurrence::Monthly), Some(future)).is_ok());
 
-        // No recurrence = always OK
         assert!(validate_recurrence(None, None).is_ok());
         assert!(validate_recurrence(None, Some(future)).is_ok());
     }
@@ -425,7 +411,6 @@ mod tests {
         let today = Local::now().naive_local().date();
         let future = today + chrono::Duration::days(7);
 
-        // Valid new task
         let task = Task::new(
             "Valid task".to_string(),
             Priority::Medium,
@@ -436,23 +421,19 @@ mod tests {
         );
         assert!(validate_task(&task, true).is_ok());
 
-        // Invalid text
         let mut invalid = task.clone();
         invalid.text = "".to_string();
         assert!(validate_task(&invalid, true).is_err());
 
-        // Invalid tags
         let mut invalid = task.clone();
         invalid.tags = vec!["invalid tag with spaces".to_string()];
         assert!(validate_task(&invalid, true).is_err());
 
-        // Past due date (new task)
         let yesterday = today - chrono::Duration::days(1);
         let mut invalid = task.clone();
         invalid.due_date = Some(yesterday);
         assert!(validate_task(&invalid, true).is_err());
 
-        // Recurrence without due date
         let mut invalid = task.clone();
         invalid.recurrence = Some(Recurrence::Daily);
         invalid.due_date = None;
@@ -466,7 +447,6 @@ mod tests {
         let today = Local::now().naive_local().date();
         let yesterday = today - chrono::Duration::days(1);
 
-        // Existing task with past due date = OK
         let task = Task::new(
             "Past task".to_string(),
             Priority::High,

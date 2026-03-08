@@ -11,6 +11,7 @@ pub fn execute(storage: &impl Storage, args: ResourceAddArgs) -> Result<()> {
     let mut resources = storage.load_resources()?;
 
     let mut resource = Resource::new(args.title);
+    resource.resource_type = args.r#type;
     resource.url = args.url;
     resource.description = args.description;
     resource.tags = args.tag;

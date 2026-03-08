@@ -43,7 +43,7 @@ fn run(cli: Cli, storage: &impl Storage) -> Result<()> {
     };
 
     match command {
-        Commands::Add(args) => commands::add::execute(storage, args),
+        Commands::Add(args) => commands::task_add::execute(storage, args),
 
         Commands::List {
             status,
@@ -53,17 +53,19 @@ fn run(cli: Cli, storage: &impl Storage) -> Result<()> {
             tag,
             project,
             recurrence: recur,
-        } => commands::list::execute(storage, status, priority, due, sort, tag, project, recur),
+        } => {
+            commands::task_list::execute(storage, status, priority, due, sort, tag, project, recur)
+        }
 
-        Commands::Done { id } => commands::done::execute(storage, id),
+        Commands::Done { id } => commands::task_done::execute(storage, id),
 
-        Commands::Undone { id } => commands::undone::execute(storage, id),
+        Commands::Undone { id } => commands::task_undone::execute(storage, id),
 
-        Commands::Remove { id, yes } => commands::remove::execute(storage, id, yes),
+        Commands::Remove { id, yes } => commands::task_remove::execute(storage, id, yes),
 
-        Commands::Edit(args) => commands::edit::execute(storage, args),
+        Commands::Edit(args) => commands::task_edit::execute(storage, args),
 
-        Commands::Clear { yes } => commands::clear::execute(storage, yes),
+        Commands::Clear { yes } => commands::task_clear::execute(storage, yes),
 
         Commands::Search {
             query,
@@ -74,18 +76,21 @@ fn run(cli: Cli, storage: &impl Storage) -> Result<()> {
 
         Commands::Stats => commands::stats::execute(storage),
 
-        Commands::Tags => commands::tags::execute(storage),
+        Commands::Tags { tag } => commands::tags::execute(storage, tag),
 
-        Commands::Projects => commands::projects::execute(storage),
+        Commands::Projects => commands::project_list::execute(storage),
 
         Commands::Project(sub) => match sub {
             ProjectCommands::Add(args) => commands::project_add::execute(storage, args),
-            ProjectCommands::List => commands::projects::execute(storage),
-            ProjectCommands::Show { id } => commands::projects::execute_show(storage, id),
+            ProjectCommands::List => commands::project_list::execute(storage),
+            ProjectCommands::Show { id } => commands::project_show::execute(storage, id),
             ProjectCommands::Edit(args) => commands::project_edit::execute(storage, args),
+            ProjectCommands::Done { id } => commands::project_done::execute(storage, id),
+            ProjectCommands::Undone { id } => commands::project_undone::execute(storage, id),
             ProjectCommands::Remove { id, yes } => {
                 commands::project_remove::execute(storage, id, yes)
             }
+            ProjectCommands::Clear { yes } => commands::project_clear::execute(storage, yes),
         },
 
         Commands::Note(sub) => match sub {
@@ -94,6 +99,7 @@ fn run(cli: Cli, storage: &impl Storage) -> Result<()> {
             NoteCommands::Show { id } => commands::note_show::execute(storage, id),
             NoteCommands::Edit(args) => commands::note_edit::execute(storage, args),
             NoteCommands::Remove { id, yes } => commands::note_remove::execute(storage, id, yes),
+            NoteCommands::Clear { yes } => commands::note_clear::execute(storage, yes),
         },
 
         Commands::Resource(sub) => match sub {
@@ -104,15 +110,18 @@ fn run(cli: Cli, storage: &impl Storage) -> Result<()> {
             ResourceCommands::Remove { id, yes } => {
                 commands::resource_remove::execute(storage, id, yes)
             }
+            ResourceCommands::Clear { yes } => commands::resource_clear::execute(storage, yes),
         },
 
-        Commands::Deps { id } => commands::deps::execute(storage, id),
+        Commands::Context { id } => commands::context::execute(storage, id),
 
-        Commands::Info => commands::info::execute(),
+        Commands::Deps { id } => commands::task_deps::execute(storage, id),
 
-        Commands::Recur { id, pattern } => commands::recur::execute(storage, id, pattern),
+        Commands::Info => commands::task_info::execute(),
 
-        Commands::ClearRecur { id } => commands::clear_recur::execute(storage, id),
+        Commands::Recur { id, pattern } => commands::task_recur::execute(storage, id, pattern),
+
+        Commands::ClearRecur { id } => commands::task_clear_recur::execute(storage, id),
 
         Commands::Purge { days, dry_run, yes } => {
             commands::purge::execute(storage, days, dry_run, yes)

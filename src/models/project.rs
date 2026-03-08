@@ -57,7 +57,7 @@ pub struct Project {
     pub tech: Vec<String>,
     #[serde(default)]
     pub due_date: Option<NaiveDate>,
-    pub created_at: NaiveDate,
+    pub created_at: DateTime<Utc>,
     #[serde(default)]
     pub completed_at: Option<NaiveDate>,
     #[serde(default)]
@@ -75,7 +75,7 @@ impl Project {
             difficulty: Difficulty::Medium,
             tech: Vec::new(),
             due_date: None,
-            created_at: Local::now().naive_local().date(),
+            created_at: Utc::now(),
             completed_at: None,
             updated_at: Some(Utc::now()),
             deleted_at: None,

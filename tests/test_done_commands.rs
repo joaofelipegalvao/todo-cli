@@ -4,7 +4,7 @@ use std::vec;
 
 use rustodo::{
     cli::AddArgs,
-    commands::{add, done},
+    commands::{task_add, task_done},
     models::Priority,
 };
 
@@ -13,7 +13,7 @@ use crate::helpers::TestEnv;
 mod helpers;
 
 fn add_simple(env: &TestEnv, text: &str) -> usize {
-    add::execute(
+    task_add::execute(
         env.storage(),
         AddArgs {
             text: text.to_string(),
@@ -30,7 +30,7 @@ fn add_simple(env: &TestEnv, text: &str) -> usize {
 }
 
 fn add_with_deps(env: &TestEnv, text: &str, depends_on: Vec<usize>) -> usize {
-    add::execute(
+    task_add::execute(
         env.storage(),
         AddArgs {
             text: text.to_string(),
@@ -53,7 +53,7 @@ fn test_done_blocked_by_pending_dep() {
     let _dep_id = add_simple(&env, "Setup database");
     let task_id = add_with_deps(&env, "Run migrations", vec![1]);
 
-    let result = done::execute(env.storage(), task_id);
+    let result = task_done::execute(env.storage(), task_id);
 
     assert!(result.is_err());
     let msg = result.unwrap_err().to_string();
@@ -79,9 +79,9 @@ fn test_done_unblocked_after_dep_completed() {
     add_simple(&env, "Setup database");
     let task_id = add_with_deps(&env, "Run migrations", vec![1]);
 
-    done::execute(env.storage(), 1).unwrap();
+    task_done::execute(env.storage(), 1).unwrap();
 
-    let result = done::execute(env.storage(), task_id);
+    let result = task_done::execute(env.storage(), task_id);
     assert!(result.is_ok());
 
     let tasks = env.load_tasks();
@@ -93,7 +93,7 @@ fn test_done_no_deps_works_normally() {
     let env = TestEnv::new();
     add_simple(&env, "Independent task");
 
-    let result = done::execute(env.storage(), 1);
+    let result = task_done::execute(env.storage(), 1);
     assert!(result.is_ok());
 
     let tasks = env.load_tasks();
@@ -108,9 +108,9 @@ fn test_done_blocked_by_one_of_multiple_deps() {
     add_simple(&env, "Dep B");
     let task_id = add_with_deps(&env, "Final task", vec![1, 2]);
 
-    done::execute(env.storage(), 1).unwrap();
+    task_done::execute(env.storage(), 1).unwrap();
 
-    let result = done::execute(env.storage(), task_id);
+    let result = task_done::execute(env.storage(), task_id);
     assert!(result.is_err());
     let msg = result.unwrap_err().to_string();
     assert!(msg.contains("#2"));
@@ -124,10 +124,10 @@ fn test_done_unblocked_all_deps_completed() {
     add_simple(&env, "Dep B");
     let task_id = add_with_deps(&env, "Final task", vec![1, 2]);
 
-    done::execute(env.storage(), 1).unwrap();
-    done::execute(env.storage(), 2).unwrap();
+    task_done::execute(env.storage(), 1).unwrap();
+    task_done::execute(env.storage(), 2).unwrap();
 
-    let result = done::execute(env.storage(), task_id);
+    let result = task_done::execute(env.storage(), task_id);
     assert!(result.is_ok());
 }
 
@@ -136,9 +136,9 @@ fn test_done_already_completed_fails() {
     let env = TestEnv::new();
     add_simple(&env, "Task");
 
-    done::execute(env.storage(), 1).unwrap();
+    task_done::execute(env.storage(), 1).unwrap();
 
-    let result = done::execute(env.storage(), 1);
+    let result = task_done::execute(env.storage(), 1);
     assert!(result.is_err());
     let msg = result.unwrap_err().to_string();
     assert!(msg.contains("already"));
@@ -152,12 +152,12 @@ fn test_done_chain_must_be_completed_in_order() {
     add_with_deps(&env, "B", vec![1]);
     add_with_deps(&env, "C", vec![2]);
 
-    assert!(done::execute(env.storage(), 3).is_err());
-    assert!(done::execute(env.storage(), 2).is_err());
+    assert!(task_done::execute(env.storage(), 3).is_err());
+    assert!(task_done::execute(env.storage(), 2).is_err());
 
-    done::execute(env.storage(), 1).unwrap();
-    done::execute(env.storage(), 2).unwrap();
-    done::execute(env.storage(), 3).unwrap();
+    task_done::execute(env.storage(), 1).unwrap();
+    task_done::execute(env.storage(), 2).unwrap();
+    task_done::execute(env.storage(), 3).unwrap();
 
     let tasks = env.load_tasks();
     assert!(tasks.iter().all(|t| t.completed));

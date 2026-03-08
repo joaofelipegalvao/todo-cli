@@ -3,7 +3,8 @@
 use clap::{Args, Parser, Subcommand};
 
 use crate::models::{
-    Difficulty, DueFilter, Priority, Recurrence, RecurrenceFilter, SortBy, StatusFilter,
+    Difficulty, DueFilter, Priority, Recurrence, RecurrenceFilter, ResourceType, SortBy,
+    StatusFilter,
 };
 
 #[derive(Parser)]
@@ -23,13 +24,12 @@ use crate::models::{
     # Add a note linked to a project\n    \
     todo note add \"Setup do banco de dados\" --project \"Backend\" --language Rust\n\n    \
     # Add a resource and link it to a note\n    \
-    todo resource add \"sqlx docs\" --url https://docs.rs/sqlx --tag rust,db\n    \
+    todo resource add \"sqlx docs\" --url https://docs.rs/sqlx --type docs --tag rust,db\n    \
     todo note edit 1 --add-resource 1\n\n    \
     # Configure sync and push\n    \
     todo sync init git@github.com:user/tasks.git\n    \
     todo sync push\n\n\
-For more information, visit: https://github.com/joaofelipegalvao/rustodo
-")]
+For more information, visit: https://github.com/joaofelipegalvao/rustodo\n")]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Option<Commands>,
@@ -52,8 +52,8 @@ pub enum Commands {
         due: Option<DueFilter>,
         #[arg(long, short = 's', value_enum)]
         sort: Option<SortBy>,
-        #[arg(long, short = 't')]
-        tag: Option<String>,
+        #[arg(long, short = 't', value_delimiter = ',')]
+        tag: Vec<String>,
         #[arg(long, short = 'p')]
         project: Option<String>,
         #[arg(long, short = 'r', value_enum)]
@@ -99,8 +99,8 @@ pub enum Commands {
     Search {
         #[arg(value_name = "QUERY")]
         query: String,
-        #[arg(long, short = 't')]
-        tag: Option<String>,
+        #[arg(long, short = 't', value_delimiter = ',')]
+        tag: Vec<String>,
         #[arg(long, short = 'p')]
         project: Option<String>,
         #[arg(long, value_enum, default_value_t = StatusFilter::All)]
@@ -110,8 +110,12 @@ pub enum Commands {
     /// Show productivity statistics and activity chart.
     Stats,
 
-    /// List all tags with task counts.
-    Tags,
+    /// List all tags with counts, or show hub view for a specific tag.
+    Tags {
+        /// Optional tag name to show hub view (all tasks, notes, resources with this tag).
+        #[arg(value_name = "TAG")]
+        tag: Option<String>,
+    },
 
     /// List all projects (shorthand for `todo project list`).
     Projects,
@@ -119,6 +123,13 @@ pub enum Commands {
     /// Manage projects.
     #[command(subcommand)]
     Project(ProjectCommands),
+
+    /// Show everything linked to a task: project, dependencies, notes, resources.
+    #[command(visible_alias = "ctx")]
+    Context {
+        #[arg(value_name = "ID")]
+        id: usize,
+    },
 
     /// Show dependency graph for a task.
     Deps {
@@ -182,10 +193,25 @@ pub enum ProjectCommands {
     },
     /// Edit an existing project.
     Edit(ProjectEditArgs),
+    /// Mark a project as completed.
+    Done {
+        #[arg(value_name = "ID")]
+        id: usize,
+    },
+    /// Mark a completed project as pending.
+    Undone {
+        #[arg(value_name = "ID")]
+        id: usize,
+    },
     /// Remove a project (soft delete).
     Remove {
         #[arg(value_name = "ID")]
         id: usize,
+        #[arg(long, short = 'y')]
+        yes: bool,
+    },
+    /// Clear all projects (soft delete).
+    Clear {
         #[arg(long, short = 'y')]
         yes: bool,
     },
@@ -252,6 +278,11 @@ pub enum NoteCommands {
     Remove {
         #[arg(value_name = "ID")]
         id: usize,
+        #[arg(long, short = 'y')]
+        yes: bool,
+    },
+    /// Clear all notes (soft delete).
+    Clear {
         #[arg(long, short = 'y')]
         yes: bool,
     },
@@ -350,6 +381,11 @@ pub enum ResourceCommands {
         #[arg(long, short = 'y')]
         yes: bool,
     },
+    /// Clear all resources (soft delete).
+    Clear {
+        #[arg(long, short = 'y')]
+        yes: bool,
+    },
 }
 
 // ── ResourceAddArgs ───────────────────────────────────────────────────────────
@@ -358,6 +394,8 @@ pub enum ResourceCommands {
 pub struct ResourceAddArgs {
     #[arg(value_name = "TITLE")]
     pub title: String,
+    #[arg(long, value_enum)]
+    pub r#type: Option<ResourceType>,
     #[arg(long, short = 'u')]
     pub url: Option<String>,
     #[arg(long, short = 'd')]
@@ -372,6 +410,8 @@ pub struct ResourceAddArgs {
 pub struct ResourceListArgs {
     #[arg(long, short = 't')]
     pub tag: Option<String>,
+    #[arg(long, value_enum)]
+    pub r#type: Option<ResourceType>,
 }
 
 // ── ResourceEditArgs ──────────────────────────────────────────────────────────
@@ -382,6 +422,10 @@ pub struct ResourceEditArgs {
     pub id: usize,
     #[arg(long)]
     pub title: Option<String>,
+    #[arg(long, value_enum, conflicts_with = "clear_type")]
+    pub r#type: Option<ResourceType>,
+    #[arg(long, conflicts_with = "type")]
+    pub clear_type: bool,
     #[arg(long, short = 'u', conflicts_with = "clear_url")]
     pub url: Option<String>,
     #[arg(long, conflicts_with = "url")]

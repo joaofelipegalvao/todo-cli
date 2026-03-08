@@ -13,13 +13,13 @@ mod helpers;
 
 use helpers::TestEnv;
 use rustodo::cli::AddArgs;
-use rustodo::commands::{add, purge, remove};
+use rustodo::commands::{purge, task_add, task_remove};
 use rustodo::models::Priority;
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 fn add_simple(env: &TestEnv, text: &str) {
-    add::execute(
+    task_add::execute(
         env.storage(),
         AddArgs {
             text: text.to_string(),
@@ -59,7 +59,7 @@ fn test_purge_no_deleted_tasks_no_error() {
 fn test_purge_dry_run_does_not_remove() {
     let env = TestEnv::new();
     add_simple(&env, "Task to delete");
-    remove::execute(env.storage(), 1, true).unwrap();
+    task_remove::execute(env.storage(), 1, true).unwrap();
 
     assert_eq!(env.task_count(), 0);
     assert_eq!(env.raw_task_count(), 1, "tombstone should exist");
@@ -75,7 +75,7 @@ fn test_purge_dry_run_does_not_remove() {
 fn test_purge_days_zero_removes_all_tombstones() {
     let env = TestEnv::new();
     add_simple(&env, "Delete me");
-    remove::execute(env.storage(), 1, true).unwrap();
+    task_remove::execute(env.storage(), 1, true).unwrap();
 
     assert_eq!(env.raw_task_count(), 1);
 
@@ -95,9 +95,9 @@ fn test_purge_days_zero_removes_multiple_tombstones() {
     add_simple(&env, "B");
     add_simple(&env, "C");
 
-    remove::execute(env.storage(), 1, true).unwrap();
-    remove::execute(env.storage(), 1, true).unwrap();
-    remove::execute(env.storage(), 1, true).unwrap();
+    task_remove::execute(env.storage(), 1, true).unwrap();
+    task_remove::execute(env.storage(), 1, true).unwrap();
+    task_remove::execute(env.storage(), 1, true).unwrap();
 
     assert_eq!(env.raw_task_count(), 3);
     assert_eq!(env.task_count(), 0);
@@ -113,7 +113,7 @@ fn test_purge_days_zero_removes_multiple_tombstones() {
 fn test_purge_high_days_threshold_keeps_recent_tombstones() {
     let env = TestEnv::new();
     add_simple(&env, "Recently deleted");
-    remove::execute(env.storage(), 1, true).unwrap();
+    task_remove::execute(env.storage(), 1, true).unwrap();
 
     // Tombstone is brand new — should NOT be purged with a 30-day threshold
     purge::execute(env.storage(), 30, false, true).unwrap();
@@ -129,7 +129,7 @@ fn test_purge_high_days_threshold_keeps_recent_tombstones() {
 fn test_purge_days_zero_is_the_only_threshold_that_catches_new_tombstones() {
     let env = TestEnv::new();
     add_simple(&env, "Just deleted");
-    remove::execute(env.storage(), 1, true).unwrap();
+    task_remove::execute(env.storage(), 1, true).unwrap();
 
     // days=1 should NOT catch a tombstone created milliseconds ago
     purge::execute(env.storage(), 1, false, true).unwrap();
@@ -152,7 +152,7 @@ fn test_purge_does_not_remove_active_tasks() {
     add_simple(&env, "Keep me");
     add_simple(&env, "Delete me");
 
-    remove::execute(env.storage(), 2, true).unwrap();
+    task_remove::execute(env.storage(), 2, true).unwrap();
 
     assert_eq!(env.task_count(), 1);
     assert_eq!(env.raw_task_count(), 2);
@@ -175,9 +175,9 @@ fn test_purge_mixed_active_and_tombstones() {
     add_simple(&env, "Delete D");
 
     // Visible: A(1), B(2), C(3), D(4)
-    remove::execute(env.storage(), 2, true).unwrap(); // Delete B
+    task_remove::execute(env.storage(), 2, true).unwrap(); // Delete B
     // Visible: A(1), C(2), D(3)
-    remove::execute(env.storage(), 3, true).unwrap(); // Delete D
+    task_remove::execute(env.storage(), 3, true).unwrap(); // Delete D
 
     // After removing B: visible = [Active A, Active C, Delete D] → ids 1,2,3
     // Remove id 2 = Active C? No — let's remove id 3 (Delete D)

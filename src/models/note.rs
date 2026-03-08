@@ -5,7 +5,7 @@
 //! associated with other entities when the user explicitly sets `project_id`,
 //! `task_id`, or `resource_ids`.
 
-use chrono::{DateTime, Local, NaiveDate, Utc};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -55,8 +55,8 @@ pub struct Note {
     #[serde(default)]
     pub resource_ids: Vec<Uuid>,
 
-    /// When the note was created.
-    pub created_at: NaiveDate,
+    /// Timestamp when the note was created (UTC).
+    pub created_at: DateTime<Utc>,
 
     /// Last modification timestamp.
     #[serde(default)]
@@ -79,7 +79,7 @@ impl Note {
             project_id: None,
             task_id: None,
             resource_ids: Vec::new(),
-            created_at: Local::now().naive_local().date(),
+            created_at: Utc::now(),
             updated_at: Some(Utc::now()),
             deleted_at: None,
         }

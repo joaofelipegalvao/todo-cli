@@ -1,14 +1,12 @@
-// src/display/table.rs
-
 use colored::Colorize;
 
 use crate::models::{Project, Recurrence, Task};
 
-use super::formatting::{get_due_colored, get_due_text, render_checkbox};
+use super::formatting::{get_due_colored, get_due_text, truncate};
 
 const ID_WIDTH: usize = 4;
 const PRIORITY_WIDTH: usize = 1;
-const STATUS_WIDTH: usize = 3;
+const STATUS_WIDTH: usize = 1;
 const RECUR_WIDTH: usize = 1;
 
 pub struct TableLayout<'a> {
@@ -24,17 +22,45 @@ pub struct TableLayout<'a> {
     show_project: bool,
     show_tags: bool,
     show_due: bool,
+    show_notes: bool,
+    show_resources: bool,
     all_tasks: &'a [Task],
     projects: &'a [Project],
+    notes: &'a [crate::models::Note],
+    resources: &'a [crate::models::Resource],
 }
 
 impl<'a> TableLayout<'a> {
-    pub fn new(tasks: &[(usize, &Task)], all_tasks: &'a [Task], projects: &'a [Project]) -> Self {
+    pub fn new(
+        tasks: &[(usize, &Task)],
+        all_tasks: &'a [Task],
+        projects: &'a [Project],
+        notes: &'a [crate::models::Note],
+        resources: &'a [crate::models::Resource],
+    ) -> Self {
         let (task_w, project_w, tags_w, due_w) = calculate_column_widths(tasks, projects);
         let show_recur = tasks.iter().any(|(_, t)| t.recurrence.is_some());
-        let show_project = tasks.iter().any(|(_, t)| t.project_id.is_some());
+        let show_project = tasks.iter().any(|(_, t)| {
+            t.project_id
+                .and_then(|pid| projects.iter().find(|p| p.uuid == pid && !p.is_deleted()))
+                .is_some()
+        });
         let show_tags = tasks.iter().any(|(_, t)| !t.tags.is_empty());
         let show_due = tasks.iter().any(|(_, t)| t.due_date.is_some());
+        let show_notes = tasks.iter().any(|(_, t)| {
+            notes
+                .iter()
+                .any(|n| !n.is_deleted() && n.task_id == Some(t.uuid))
+        });
+        let show_resources = tasks.iter().any(|(_, t)| {
+            notes.iter().any(|n| {
+                !n.is_deleted()
+                    && n.task_id == Some(t.uuid)
+                    && n.resource_ids
+                        .iter()
+                        .any(|rid| resources.iter().any(|r| !r.is_deleted() && r.uuid == *rid))
+            })
+        });
 
         Self {
             id: ID_WIDTH,
@@ -49,8 +75,12 @@ impl<'a> TableLayout<'a> {
             show_project,
             show_tags,
             show_due,
+            show_notes,
+            show_resources,
             all_tasks,
             projects,
+            notes,
+            resources,
         }
     }
 
@@ -68,13 +98,19 @@ impl<'a> TableLayout<'a> {
         if self.show_due {
             width += self.due + 2;
         }
+        if self.show_notes {
+            width += 5 + 2;
+        }
+        if self.show_resources {
+            width += 3 + 2;
+        }
         width
     }
 
     pub fn display_header(&self) {
         print!("{:>id_width$} ", "ID".dimmed(), id_width = self.id);
         print!(" {:<p$} ", "P".dimmed(), p = self.priority);
-        print!(" {:<s$} ", " S".dimmed(), s = self.status);
+        print!(" {:<s$}  ", "S".dimmed(), s = self.status);
         if self.show_recur {
             print!(" {:<r$}  ", "R".dimmed(), r = self.recur);
         }
@@ -88,6 +124,12 @@ impl<'a> TableLayout<'a> {
         if self.show_due {
             print!("  {}", "Due".dimmed());
         }
+        if self.show_notes {
+            print!("  {:^5}", "Notes".dimmed());
+        }
+        if self.show_resources {
+            print!("  {:^3}", "Res".dimmed());
+        }
         println!();
     }
 
@@ -97,25 +139,36 @@ impl<'a> TableLayout<'a> {
 
     pub fn display_task(&self, number: usize, task: &Task) {
         let blocked = !task.completed && task.is_blocked(self.all_tasks);
-        let checkbox = if blocked {
-            "[~]".normal()
+
+        let status_letter = if blocked {
+            "B".red()
+        } else if task.completed {
+            "D".green()
         } else {
-            render_checkbox(task.completed)
+            "P".yellow()
         };
 
         let letter = task.priority.letter();
         let task_text = truncate(&task.text, self.task);
 
-        // Resolve project UUID → name for display
+        // Resolve project UUID → name for display (skip soft-deleted projects)
         let project_name = task
             .project_id
-            .and_then(|pid| self.projects.iter().find(|p| p.uuid == pid))
+            .and_then(|pid| {
+                self.projects
+                    .iter()
+                    .find(|p| p.uuid == pid && !p.is_deleted())
+            })
             .map(|p| p.name.as_str())
             .unwrap_or("");
-        let project_str = truncate(project_name, self.project);
+        let project_str = if project_name.is_empty() {
+            "—".to_string()
+        } else {
+            truncate(project_name, self.project)
+        };
 
         let tags_str = if task.tags.is_empty() {
-            String::new()
+            "—".to_string()
         } else {
             truncate(&task.tags.join(", "), self.tags)
         };
@@ -138,20 +191,26 @@ impl<'a> TableLayout<'a> {
                 project_str.dimmed(),
             )
         } else {
-            (
-                task_text.bright_white(),
-                tags_str.cyan(),
-                project_str.magenta(),
-            )
+            let tags_c = if task.tags.is_empty() {
+                tags_str.dimmed()
+            } else {
+                tags_str.cyan()
+            };
+            let proj_c = if project_name.is_empty() {
+                project_str.dimmed()
+            } else {
+                project_str.magenta()
+            };
+            (task_text.bright_white(), tags_c, proj_c)
         };
 
         print!(
             "{:>id_width$} ",
-            number.to_string().dimmed(),
+            format!("#{}", number).dimmed(),
             id_width = self.id
         );
         print!(" {:<p$} ", letter, p = self.priority);
-        print!(" {:<s$} ", checkbox, s = self.status);
+        print!(" {:<s$}  ", status_letter, s = self.status);
         if self.show_recur {
             print!(" {:<r$}  ", recur_indicator, r = self.recur);
         }
@@ -165,15 +224,39 @@ impl<'a> TableLayout<'a> {
         if self.show_due {
             print!("  {}", due_colored);
         }
+        if self.show_notes {
+            let count = self
+                .notes
+                .iter()
+                .filter(|n| !n.is_deleted() && n.task_id == Some(task.uuid))
+                .count();
+            let notes_str = if count > 0 {
+                format!("{:^5}", count).dimmed().to_string()
+            } else {
+                format!("{:^5}", "—").dimmed().to_string()
+            };
+            print!("  {}", notes_str);
+        }
+        if self.show_resources {
+            let count = self
+                .notes
+                .iter()
+                .filter(|n| !n.is_deleted() && n.task_id == Some(task.uuid))
+                .flat_map(|n| n.resource_ids.iter())
+                .filter(|rid| {
+                    self.resources
+                        .iter()
+                        .any(|r| !r.is_deleted() && r.uuid == **rid)
+                })
+                .count();
+            let res_str = if count > 0 {
+                format!("{:^3}", count).dimmed().to_string()
+            } else {
+                format!("{:^3}", "—").dimmed().to_string()
+            };
+            print!("  {}", res_str);
+        }
         println!();
-    }
-}
-
-fn truncate(s: &str, max: usize) -> String {
-    if s.len() > max {
-        format!("{}...", &s[..max.saturating_sub(3)])
-    } else {
-        s.to_owned()
     }
 }
 
@@ -189,9 +272,8 @@ fn calculate_column_widths(
     for (_, task) in tasks {
         max_task = max_task.max(task.text.len());
 
-        // Resolve UUID → name to compute column width
         if let Some(pid) = task.project_id
-            && let Some(p) = projects.iter().find(|p| p.uuid == pid)
+            && let Some(p) = projects.iter().find(|p| p.uuid == pid && !p.is_deleted())
         {
             max_project = max_project.max(p.name.len());
         }
@@ -219,10 +301,12 @@ pub fn display_lists(
     title: &str,
     all_tasks: &[Task],
     projects: &[Project],
+    notes: &[crate::models::Note],
+    resources: &[crate::models::Resource],
 ) {
     println!("\n{}:\n", title);
 
-    let layout = TableLayout::new(tasks, all_tasks, projects);
+    let layout = TableLayout::new(tasks, all_tasks, projects, notes, resources);
     layout.display_header();
     layout.display_separator();
 

@@ -6,21 +6,14 @@ use colored::Colorize;
 use crate::cli::ProjectEditArgs;
 use crate::date_parser;
 use crate::storage::Storage;
+use crate::validation::{validate_task_id, visible_indices};
 
 pub fn execute(storage: &impl Storage, args: ProjectEditArgs) -> Result<()> {
     let (_, mut projects, _) = storage.load_all()?;
 
-    let visible: Vec<usize> = projects
-        .iter()
-        .enumerate()
-        .filter(|(_, p)| !p.is_deleted())
-        .map(|(i, _)| i)
-        .collect();
-
-    let real_index = visible
-        .get(args.id.saturating_sub(1))
-        .copied()
-        .ok_or_else(|| anyhow::anyhow!("Project #{} not found", args.id))?;
+    let vis = visible_indices(&projects, |p| p.is_deleted());
+    validate_task_id(args.id, vis.len())?;
+    let real_index = vis[args.id - 1];
 
     let due = if let Some(ref due_str) = args.due {
         Some(date_parser::parse_date_not_in_past(due_str)?)
@@ -64,13 +57,14 @@ pub fn execute(storage: &impl Storage, args: ProjectEditArgs) -> Result<()> {
         }
     } else {
         if !args.remove_tech.is_empty() {
+            let remove_normalized: Vec<String> = args
+                .remove_tech
+                .iter()
+                .map(|t| t.trim().to_lowercase())
+                .collect();
             let mut removed = Vec::new();
             project.tech.retain(|t| {
-                if args
-                    .remove_tech
-                    .iter()
-                    .any(|r| r.to_lowercase() == t.to_lowercase())
-                {
+                if remove_normalized.contains(&t.to_lowercase()) {
                     removed.push(t.clone());
                     false
                 } else {
@@ -84,13 +78,17 @@ pub fn execute(storage: &impl Storage, args: ProjectEditArgs) -> Result<()> {
         if !args.add_tech.is_empty() {
             let mut added = Vec::new();
             for tech in &args.add_tech {
+                let tech = tech.trim().to_string();
+                if tech.is_empty() {
+                    continue;
+                }
                 if !project
                     .tech
                     .iter()
                     .any(|t| t.to_lowercase() == tech.to_lowercase())
                 {
                     project.tech.push(tech.clone());
-                    added.push(tech.clone());
+                    added.push(tech);
                 }
             }
             if !added.is_empty() {

@@ -1,27 +1,22 @@
-// src/commands/resource_remove.rs
-
 //! Handler for `todo resource remove <ID>`.
+//!
+//! Soft-deletes a resource after optional confirmation. Notes that referenced
+//! the removed resource have it removed from `resource_ids` automatically.
 
 use anyhow::Result;
 use colored::Colorize;
 
 use crate::storage::Storage;
+use crate::validation::{validate_task_id, visible_indices};
 
 pub fn execute(storage: &impl Storage, id: usize, yes: bool) -> Result<()> {
-    let mut resources = storage.load_resources()?;
+    let (_, _, mut notes, mut resources) = storage.load_all_with_resources()?;
 
-    let visible: Vec<usize> = resources
-        .iter()
-        .enumerate()
-        .filter(|(_, r)| !r.is_deleted())
-        .map(|(i, _)| i)
-        .collect();
+    let vis = visible_indices(&resources, |r| r.is_deleted());
+    validate_task_id(id, vis.len())?;
 
-    let real_index = visible
-        .get(id.saturating_sub(1))
-        .copied()
-        .ok_or_else(|| anyhow::anyhow!("Resource #{} not found", id))?;
-
+    let real_index = vis[id - 1];
+    let resource_uuid = resources[real_index].uuid;
     let title = resources[real_index].title.clone();
 
     if !yes {
@@ -40,6 +35,17 @@ pub fn execute(storage: &impl Storage, id: usize, yes: bool) -> Result<()> {
     }
 
     resources[real_index].soft_delete();
+
+    // Remove this resource UUID from notes that reference it
+    for note in notes.iter_mut().filter(|n| !n.is_deleted()) {
+        let before = note.resource_ids.len();
+        note.resource_ids.retain(|id| *id != resource_uuid);
+        if note.resource_ids.len() != before {
+            note.touch();
+        }
+    }
+
+    storage.save_notes(&notes)?;
     storage.save_resources(&resources)?;
 
     println!("{} Resource #{} removed.", "✓".green(), id);
