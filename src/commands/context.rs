@@ -8,7 +8,7 @@ use colored::Colorize;
 
 use crate::render::formatting::truncate;
 use crate::storage::Storage;
-use crate::validation::{validate_task_id, visible_indices};
+use crate::utils::validation::{validate_task_id, visible_indices};
 
 pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     let (tasks, projects, notes, resources) = storage.load_all_with_resources()?;
@@ -40,6 +40,20 @@ pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     };
     println!("  {}  {}", "Status".dimmed(), status);
     println!("  {}  {}", "Priority".dimmed(), task.priority.letter());
+    let urgency = task.urgency_score(&all_visible);
+    let urgency_colored = {
+        let s = format!("{:.1}", urgency);
+        if urgency >= 10.0 {
+            s.red().bold().to_string()
+        } else if urgency >= 6.0 {
+            s.yellow().to_string()
+        } else if urgency >= 3.0 {
+            s.normal().to_string()
+        } else {
+            s.dimmed().to_string()
+        }
+    };
+    println!("  {}  {}", "Urgency".dimmed(), urgency_colored);
 
     if let Some(pid) = task.project_id
         && let Some(project) = projects.iter().find(|p| p.uuid == pid)

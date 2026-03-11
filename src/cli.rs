@@ -110,6 +110,25 @@ pub enum Commands {
     /// Show productivity statistics and activity chart.
     Stats,
 
+    /// Show a monthly calendar with due dates for tasks and projects.
+    #[command(visible_alias = "cal")]
+    Calendar {
+        /// Month (1-12). Defaults to current month.
+        #[arg(value_name = "MONTH")]
+        month: Option<u32>,
+        /// Year (e.g. 2026). Defaults to current year.
+        #[arg(value_name = "YEAR")]
+        year: Option<i32>,
+    },
+
+    /// Show the most urgent pending tasks ready to work on.
+    #[command(visible_alias = "n")]
+    Next {
+        /// How many tasks to show (default: 5).
+        #[arg(long, short = 'n', default_value_t = 5)]
+        limit: usize,
+    },
+
     /// List all tags with counts, or show hub view for a specific tag.
     Tags {
         /// Optional tag name to show hub view (all tasks, notes, resources with this tag).
@@ -176,6 +195,10 @@ pub enum Commands {
     /// Sync tasks with a Git repository.
     #[command(subcommand)]
     Sync(SyncCommands),
+
+    /// Manage holiday data from holidata.net.
+    #[command(subcommand)]
+    Holidays(HolidaysCommands),
 }
 
 // ── Project subcommands ───────────────────────────────────────────────────────
@@ -505,4 +528,12 @@ pub struct EditArgs {
     pub remove_dep: Vec<usize>,
     #[arg(long, conflicts_with_all = ["add_dep", "remove_dep"])]
     pub clear_deps: bool,
+}
+
+// ── Holidays subcommands ──────────────────────────────────────────────────────
+
+#[derive(Subcommand)]
+pub enum HolidaysCommands {
+    /// Download or refresh holiday data from holidata.net for the configured locale.
+    Refresh,
 }
