@@ -71,17 +71,17 @@ impl ResourceTableLayout {
         if show_type {
             total_w += 2 + type_w;
         }
-        if show_url {
-            total_w += 2 + url_w;
-        }
         if show_tags {
             total_w += 2 + tags_w;
         }
-        if show_desc {
-            total_w += 2 + desc_w;
-        }
         if show_notes {
             total_w += 2 + 5;
+        }
+        if show_url {
+            total_w += 2 + url_w;
+        }
+        if show_desc {
+            total_w += 2 + desc_w;
         }
 
         Self {
@@ -101,25 +101,25 @@ impl ResourceTableLayout {
 
     pub fn display_header(&self) {
         print!("{:>4}  ", "ID".dimmed());
-        print!("{:<title_w$}", "Title".dimmed(), title_w = self.title_w);
         if self.show_type {
-            print!("  {:<type_w$}", "Type".dimmed(), type_w = self.type_w);
-        }
-        if self.show_url {
-            print!("  {:<url_w$}", "URL".dimmed(), url_w = self.url_w);
+            print!("{:<type_w$}  ", "Type".dimmed(), type_w = self.type_w);
         }
         if self.show_tags {
-            print!("  {:<tags_w$}", "Tags".dimmed(), tags_w = self.tags_w);
+            print!("{:<tags_w$}  ", "Tags".dimmed(), tags_w = self.tags_w);
         }
+        if self.show_notes {
+            print!("{:^5}  ", "Notes".dimmed());
+        }
+        if self.show_url {
+            print!("{:<url_w$}  ", "URL".dimmed(), url_w = self.url_w);
+        }
+        print!("{:<title_w$}", "Title".dimmed(), title_w = self.title_w);
         if self.show_desc {
             print!(
                 "  {:<desc_w$}",
                 "Description".dimmed(),
                 desc_w = self.desc_w
             );
-        }
-        if self.show_notes {
-            print!("  {:^5}", "Notes".dimmed());
         }
         println!();
         println!("{}", "─".repeat(self.total_w).dimmed());
@@ -148,18 +148,11 @@ impl ResourceTableLayout {
             .unwrap_or_default();
 
         print!("{:>4}  ", format!("#{}", id).dimmed());
-        print!("{:<title_w$}", title_str, title_w = self.title_w);
         if self.show_type {
-            print!("  {:<type_w$}", type_str.yellow(), type_w = self.type_w);
-        }
-        if self.show_url {
-            print!("  {:<url_w$}", url_str.dimmed(), url_w = self.url_w);
+            print!("{:<type_w$}  ", type_str.yellow(), type_w = self.type_w);
         }
         if self.show_tags {
-            print!("  {:<tags_w$}", tags_str.cyan(), tags_w = self.tags_w);
-        }
-        if self.show_desc {
-            print!("  {:<desc_w$}", desc_str.dimmed(), desc_w = self.desc_w);
+            print!("{:<tags_w$}  ", tags_str.cyan(), tags_w = self.tags_w);
         }
         if self.show_notes {
             let count = notes
@@ -171,7 +164,14 @@ impl ResourceTableLayout {
             } else {
                 format!("{:^5}", "—").dimmed().to_string()
             };
-            print!("  {}", notes_str);
+            print!("{}  ", notes_str);
+        }
+        if self.show_url {
+            print!("{:<url_w$}  ", url_str.dimmed(), url_w = self.url_w);
+        }
+        print!("{:<title_w$}", title_str, title_w = self.title_w);
+        if self.show_desc {
+            print!("  {:<desc_w$}", desc_str.dimmed(), desc_w = self.desc_w);
         }
         println!();
     }

@@ -1,8 +1,13 @@
+//! Terminal rendering for task lists.
+//!
+//! Column order (Taskwarrior-style): ID  P  S  R  Tags  Project  Due  Task
+//! Fixed context columns on the left, content (Task) on the right.
+
 use colored::Colorize;
 
 use crate::models::{Project, Recurrence, Task};
 
-use super::formatting::{get_due_colored, get_due_text, truncate};
+use super::formatting::{get_due_colored, get_due_text, project_colored, project_name, truncate};
 
 const ID_WIDTH: usize = 4;
 const PRIORITY_WIDTH: usize = 1;
@@ -85,15 +90,16 @@ impl<'a> TableLayout<'a> {
     }
 
     pub fn total_width(&self) -> usize {
-        let mut width = self.id + self.priority + self.status + self.task + 8;
+        // ID + P + S + optional R + optional context cols + Task + optional Notes/Res
+        let mut width = self.id + 2 + self.priority + 2 + self.status + 2 + self.task;
         if self.show_recur {
             width += self.recur + 2;
         }
-        if self.show_project {
-            width += self.project + 2;
-        }
         if self.show_tags {
             width += self.tags + 2;
+        }
+        if self.show_project {
+            width += self.project + 2;
         }
         if self.show_due {
             width += self.due + 2;
@@ -108,22 +114,22 @@ impl<'a> TableLayout<'a> {
     }
 
     pub fn display_header(&self) {
-        print!("{:>id_width$} ", "ID".dimmed(), id_width = self.id);
-        print!(" {:<p$} ", "P".dimmed(), p = self.priority);
-        print!(" {:<s$}  ", "S".dimmed(), s = self.status);
+        print!("{:>id_width$}  ", "ID".dimmed(), id_width = self.id);
+        print!("{:<p$}  ", "P".dimmed(), p = self.priority);
+        print!("{:<s$}  ", "S".dimmed(), s = self.status);
         if self.show_recur {
-            print!(" {:<r$}  ", "R".dimmed(), r = self.recur);
-        }
-        print!("{:<t$}", "Task".dimmed(), t = self.task);
-        if self.show_project {
-            print!("  {:<p$}", "Project".dimmed(), p = self.project);
+            print!("{:<r$}  ", "R".dimmed(), r = self.recur);
         }
         if self.show_tags {
-            print!("  {:<t$}", "Tags".dimmed(), t = self.tags);
+            print!("{:<t$}  ", "Tags".dimmed(), t = self.tags);
+        }
+        if self.show_project {
+            print!("{:<p$}  ", "Project".dimmed(), p = self.project);
         }
         if self.show_due {
-            print!("  {}", "Due".dimmed());
+            print!("{:<d$}  ", "Due".dimmed(), d = self.due);
         }
+        print!("{:<t$}", "Task".dimmed(), t = self.task);
         if self.show_notes {
             print!("  {:^5}", "Notes".dimmed());
         }
@@ -151,21 +157,8 @@ impl<'a> TableLayout<'a> {
         let letter = task.priority.letter();
         let task_text = truncate(&task.text, self.task);
 
-        // Resolve project UUID → name for display (skip soft-deleted projects)
-        let project_name = task
-            .project_id
-            .and_then(|pid| {
-                self.projects
-                    .iter()
-                    .find(|p| p.uuid == pid && !p.is_deleted())
-            })
-            .map(|p| p.name.as_str())
-            .unwrap_or("");
-        let project_str = if project_name.is_empty() {
-            "—".to_string()
-        } else {
-            truncate(project_name, self.project)
-        };
+        let name = project_name(task.project_id, self.projects);
+        let project_str = truncate(name, self.project);
 
         let tags_str = if task.tags.is_empty() {
             "—".to_string()
@@ -182,7 +175,7 @@ impl<'a> TableLayout<'a> {
             None => " ".normal(),
         };
 
-        let (text_colored, tags_colored, project_colored) = if task.completed {
+        let (text_colored, tags_colored, proj_colored) = if task.completed {
             (task_text.green(), tags_str.dimmed(), project_str.dimmed())
         } else if blocked {
             (
@@ -196,34 +189,33 @@ impl<'a> TableLayout<'a> {
             } else {
                 tags_str.cyan()
             };
-            let proj_c = if project_name.is_empty() {
-                project_str.dimmed()
-            } else {
-                project_str.magenta()
-            };
-            (task_text.bright_white(), tags_c, proj_c)
+            (
+                task_text.bright_white(),
+                tags_c,
+                project_colored(&project_str),
+            )
         };
 
         print!(
-            "{:>id_width$} ",
+            "{:>id_width$}  ",
             format!("#{}", number).dimmed(),
             id_width = self.id
         );
-        print!(" {:<p$} ", letter, p = self.priority);
-        print!(" {:<s$}  ", status_letter, s = self.status);
+        print!("{:<p$}  ", letter, p = self.priority);
+        print!("{:<s$}  ", status_letter, s = self.status);
         if self.show_recur {
-            print!(" {:<r$}  ", recur_indicator, r = self.recur);
-        }
-        print!("{:<t$}", text_colored, t = self.task);
-        if self.show_project {
-            print!("  {:<p$}", project_colored, p = self.project);
+            print!("{:<r$}  ", recur_indicator, r = self.recur);
         }
         if self.show_tags {
-            print!("  {:<t$}", tags_colored, t = self.tags);
+            print!("{:<t$}  ", tags_colored, t = self.tags);
+        }
+        if self.show_project {
+            print!("{:<p$}  ", proj_colored, p = self.project);
         }
         if self.show_due {
-            print!("  {}", due_colored);
+            print!("{:<d$}  ", due_colored, d = self.due);
         }
+        print!("{:<t$}", text_colored, t = self.task);
         if self.show_notes {
             let count = self
                 .notes

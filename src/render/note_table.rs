@@ -1,9 +1,12 @@
 //! Terminal rendering for note lists.
+//!
+//! Column order (Taskwarrior-style): ID  Project  Lang  Tags  Note
+//! Fixed context columns on the left, content (Note) on the right.
 
 use colored::Colorize;
 
 use crate::models::{Note, Project};
-use crate::render::formatting::truncate;
+use crate::render::formatting::{project_colored, project_name, truncate};
 
 pub struct NoteTableLayout {
     pub body_w: usize,
@@ -107,19 +110,19 @@ impl NoteTableLayout {
 
     pub fn display_header(&self) {
         print!("{:>4}  ", "ID".dimmed());
-        print!("{:<body_w$}", "Note".dimmed(), body_w = self.body_w);
         if self.show_project {
-            print!("  {:<proj_w$}", "Project".dimmed(), proj_w = self.proj_w);
+            print!("{:<proj_w$}  ", "Project".dimmed(), proj_w = self.proj_w);
         }
         if self.show_lang {
-            print!("  {:<lang_w$}", "Lang".dimmed(), lang_w = self.lang_w);
+            print!("{:<lang_w$}  ", "Lang".dimmed(), lang_w = self.lang_w);
         }
         if self.show_tags {
-            print!("  {:<tags_w$}", "Tags".dimmed(), tags_w = self.tags_w);
+            print!("{:<tags_w$}  ", "Tags".dimmed(), tags_w = self.tags_w);
         }
         if self.show_resources {
-            print!("  {:^3}", "Res".dimmed());
+            print!("{:^3}  ", "Res".dimmed());
         }
+        print!("{:<body_w$}", "Note".dimmed(), body_w = self.body_w);
         println!();
         println!("{}", "─".repeat(self.total_w).dimmed());
     }
@@ -137,11 +140,9 @@ impl NoteTableLayout {
         });
         let preview_str = truncate(preview, self.body_w);
 
-        let proj_str = note
-            .project_id
-            .and_then(|pid| projects.iter().find(|p| p.uuid == pid))
-            .map(|p| truncate(&p.name, self.proj_w))
-            .unwrap_or_default();
+        let name = project_name(note.project_id, projects);
+        let proj_str = truncate(name, self.proj_w);
+        let proj_colored = project_colored(&proj_str);
 
         let lang_str = note
             .language
@@ -156,15 +157,14 @@ impl NoteTableLayout {
         };
 
         print!("{:>4}  ", format!("#{}", id).dimmed());
-        print!("{:<body_w$}", preview_str, body_w = self.body_w);
         if self.show_project {
-            print!("  {:<proj_w$}", proj_str.magenta(), proj_w = self.proj_w);
+            print!("{:<proj_w$}  ", proj_colored, proj_w = self.proj_w);
         }
         if self.show_lang {
-            print!("  {:<lang_w$}", lang_str.yellow(), lang_w = self.lang_w);
+            print!("{:<lang_w$}  ", lang_str.yellow(), lang_w = self.lang_w);
         }
         if self.show_tags {
-            print!("  {:<tags_w$}", tags_str.dimmed(), tags_w = self.tags_w);
+            print!("{:<tags_w$}  ", tags_str.cyan(), tags_w = self.tags_w);
         }
         if self.show_resources {
             let count = note
@@ -177,8 +177,9 @@ impl NoteTableLayout {
             } else {
                 format!("{:^3}", "—").dimmed().to_string()
             };
-            print!("  {}", res_str);
+            print!("{}  ", res_str);
         }
+        print!("{:<body_w$}", preview_str, body_w = self.body_w);
         println!();
     }
 

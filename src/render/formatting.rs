@@ -1,42 +1,35 @@
 use chrono::Local;
 use colored::{ColoredString, Colorize};
+use uuid::Uuid;
 
-use crate::models::Task;
+use crate::models::{Project, Task};
 
-/// Generates a human-readable due date description.
+/// Resolves a `project_id` to its display name.
 ///
-/// # Returns
+/// Returns `"—"` if the ID is `None` or the project is soft-deleted.
+pub fn project_name(project_id: Option<Uuid>, projects: &[Project]) -> &str {
+    project_id
+        .and_then(|pid| projects.iter().find(|p| p.uuid == pid && !p.is_deleted()))
+        .map(|p| p.name.as_str())
+        .unwrap_or("—")
+}
+
+/// Colorizes a resolved project name.
 ///
-/// A relative string based on today's date:
-/// - `"late N days"` if the due date is in the past
-/// - `"due today"` if due today
-/// - `"in N days"` if due in the future
-///
-/// Returns an empty string if the task has no due date.
-///
-/// # Examples
-///
-/// ```no_run
-/// use rustodo::models::{Task, Priority};
-///
-/// // Note: the exact output depends on today's date at runtime.
-/// let task = Task::new("Buy milk".to_string(), Priority::Medium, vec![], None, None, None);
-/// // returns "" when task has no due date
-/// ```
-/// Converts a `NaiveDate` into a human-readable relative string.
+/// - `magenta` for a real project name
+/// - `dimmed` for `"—"` (no project)
+pub fn project_colored(name: &str) -> ColoredString {
+    if name == "—" {
+        name.dimmed()
+    } else {
+        name.magenta()
+    }
+}
+
+/// Converts a `NaiveDate` into a full date string (YYYY-MM-DD).
 /// Shared by task list, project list, and any other due-date display.
 pub fn due_relative_text(due: chrono::NaiveDate) -> String {
-    let today = Local::now().naive_local().date();
-    let days = (due - today).num_days();
-    match days {
-        d if d < 0 => {
-            let abs_d = d.abs();
-            format!("late {} day{}", abs_d, if abs_d == 1 { "" } else { "s" })
-        }
-        0 => "today".to_string(),
-        1 => "tomorrow".to_string(),
-        d => format!("in {} day{}", d, if d == 1 { "" } else { "s" }),
-    }
+    due.format("%Y-%m-%d").to_string()
 }
 
 pub fn get_due_text(task: &Task) -> String {
