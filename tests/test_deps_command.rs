@@ -14,13 +14,13 @@ mod helpers;
 
 use helpers::TestEnv;
 use rustodo::cli::{AddArgs, EditArgs};
-use rustodo::commands::{task_add, task_deps, task_done, task_edit};
+use rustodo::commands::task;
 use rustodo::models::Priority;
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
 fn add_simple(env: &TestEnv, text: &str) -> usize {
-    task_add::execute(
+    task::add::execute(
         env.storage(),
         AddArgs {
             text: text.to_string(),
@@ -37,7 +37,7 @@ fn add_simple(env: &TestEnv, text: &str) -> usize {
 }
 
 fn add_with_deps(env: &TestEnv, text: &str, depends_on: Vec<usize>) -> usize {
-    task_add::execute(
+    task::add::execute(
         env.storage(),
         AddArgs {
             text: text.to_string(),
@@ -60,7 +60,7 @@ fn test_deps_task_with_no_dependencies() {
     let env = TestEnv::new();
     add_simple(&env, "Standalone task");
 
-    let result = task_deps::execute(env.storage(), 1);
+    let result = task::deps::execute(env.storage(), 1);
     assert!(result.is_ok());
 }
 
@@ -70,7 +70,7 @@ fn test_deps_task_with_pending_dependency() {
     add_simple(&env, "Setup database");
     add_with_deps(&env, "Run migrations", vec![1]);
 
-    let result = task_deps::execute(env.storage(), 2);
+    let result = task::deps::execute(env.storage(), 2);
     assert!(result.is_ok());
 
     // Verify blocking state via task model
@@ -87,9 +87,9 @@ fn test_deps_task_with_completed_dependency() {
     add_simple(&env, "Setup database");
     add_with_deps(&env, "Run migrations", vec![1]);
 
-    task_done::execute(env.storage(), 1).unwrap();
+    task::done::execute(env.storage(), 1).unwrap();
 
-    let result = task_deps::execute(env.storage(), 2);
+    let result = task::deps::execute(env.storage(), 2);
     assert!(result.is_ok());
 
     let tasks = env.load_tasks();
@@ -107,7 +107,7 @@ fn test_deps_task_required_by_others() {
     add_with_deps(&env, "Feature B", vec![1]);
 
     // deps on task 1 should mention it is required by tasks 2 and 3
-    let result = task_deps::execute(env.storage(), 1);
+    let result = task::deps::execute(env.storage(), 1);
     assert!(result.is_ok());
 
     let tasks = env.load_tasks();
@@ -128,10 +128,10 @@ fn test_deps_all_dependencies_satisfied() {
     add_simple(&env, "Dep B");
     add_with_deps(&env, "Final task", vec![1, 2]);
 
-    task_done::execute(env.storage(), 1).unwrap();
-    task_done::execute(env.storage(), 2).unwrap();
+    task::done::execute(env.storage(), 1).unwrap();
+    task::done::execute(env.storage(), 2).unwrap();
 
-    let result = task_deps::execute(env.storage(), 3);
+    let result = task::deps::execute(env.storage(), 3);
     assert!(result.is_ok());
 
     let tasks = env.load_tasks();
@@ -146,7 +146,7 @@ fn test_deps_partially_satisfied() {
     add_simple(&env, "Dep B");
     add_with_deps(&env, "Final task", vec![1, 2]);
 
-    task_done::execute(env.storage(), 1).unwrap();
+    task::done::execute(env.storage(), 1).unwrap();
     // Dep B still pending
 
     let tasks = env.load_tasks();
@@ -162,7 +162,7 @@ fn test_deps_invalid_id_zero() {
     let env = TestEnv::new();
     add_simple(&env, "Task");
 
-    let result = task_deps::execute(env.storage(), 0);
+    let result = task::deps::execute(env.storage(), 0);
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("invalid"));
 }
@@ -172,7 +172,7 @@ fn test_deps_invalid_id_out_of_range() {
     let env = TestEnv::new();
     add_simple(&env, "Task");
 
-    let result = task_deps::execute(env.storage(), 99);
+    let result = task::deps::execute(env.storage(), 99);
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("invalid"));
 }
@@ -181,7 +181,7 @@ fn test_deps_invalid_id_out_of_range() {
 fn test_deps_empty_storage() {
     let env = TestEnv::new();
 
-    let result = task_deps::execute(env.storage(), 1);
+    let result = task::deps::execute(env.storage(), 1);
     assert!(result.is_err());
 }
 
@@ -191,7 +191,7 @@ fn test_deps_empty_storage() {
 fn test_add_self_dependency_fails() {
     let env = TestEnv::new();
     // Task ID will be 1, so depends_on=[1] is a self-reference
-    let result = task_add::execute(
+    let result = task::add::execute(
         env.storage(),
         AddArgs {
             text: "Self-referencing task".to_string(),
@@ -218,7 +218,7 @@ fn test_edit_add_self_dependency_fails() {
     let env = TestEnv::new();
     add_simple(&env, "Task A");
 
-    let result = task_edit::execute(
+    let result = task::edit::execute(
         env.storage(),
         EditArgs {
             id: 1,
@@ -255,7 +255,7 @@ fn test_edit_direct_cycle_fails() {
     add_with_deps(&env, "B", vec![1]); // B depends on A
 
     // Now try to make A depend on B → cycle A→B→A
-    let result = task_edit::execute(
+    let result = task::edit::execute(
         env.storage(),
         EditArgs {
             id: 1,
@@ -287,7 +287,7 @@ fn test_edit_transitive_cycle_fails() {
     add_with_deps(&env, "C", vec![2]); // C → B → A
 
     // Try to make A depend on C → cycle A→C→B→A
-    let result = task_edit::execute(
+    let result = task::edit::execute(
         env.storage(),
         EditArgs {
             id: 1,
@@ -319,7 +319,7 @@ fn test_edit_no_cycle_on_valid_dep() {
     add_with_deps(&env, "C", vec![2]); // C → B
 
     // A depends on C is fine (A←C→B, no cycle involving A)
-    let result = task_edit::execute(
+    let result = task::edit::execute(
         env.storage(),
         EditArgs {
             id: 1,
@@ -350,7 +350,7 @@ fn test_edit_duplicate_dependency_fails() {
     add_with_deps(&env, "Task", vec![1]);
 
     // Try to add dep 1 again
-    let result = task_edit::execute(
+    let result = task::edit::execute(
         env.storage(),
         EditArgs {
             id: 2,
@@ -382,7 +382,7 @@ fn test_edit_remove_existing_dependency() {
     add_simple(&env, "Dep");
     add_with_deps(&env, "Task", vec![1]);
 
-    let result = task_edit::execute(
+    let result = task::edit::execute(
         env.storage(),
         EditArgs {
             id: 2,
@@ -413,7 +413,7 @@ fn test_edit_remove_nonexistent_dependency_fails() {
     add_simple(&env, "Dep");
     add_simple(&env, "Task"); // No deps
 
-    let result = task_edit::execute(
+    let result = task::edit::execute(
         env.storage(),
         EditArgs {
             id: 2,
@@ -444,7 +444,7 @@ fn test_edit_clear_all_dependencies() {
     add_simple(&env, "B");
     add_with_deps(&env, "C", vec![1, 2]);
 
-    let result = task_edit::execute(
+    let result = task::edit::execute(
         env.storage(),
         EditArgs {
             id: 3,
@@ -478,7 +478,7 @@ fn test_blocking_deps_returns_only_pending() {
     add_simple(&env, "B");
     add_with_deps(&env, "C", vec![1, 2]);
 
-    task_done::execute(env.storage(), 1).unwrap();
+    task::done::execute(env.storage(), 1).unwrap();
 
     let tasks = env.load_tasks();
     let task_b_build = tasks[1].uuid;
@@ -493,8 +493,8 @@ fn test_blocking_deps_empty_when_all_done() {
     add_simple(&env, "B");
     add_with_deps(&env, "C", vec![1, 2]);
 
-    task_done::execute(env.storage(), 1).unwrap();
-    task_done::execute(env.storage(), 2).unwrap();
+    task::done::execute(env.storage(), 1).unwrap();
+    task::done::execute(env.storage(), 2).unwrap();
 
     let tasks = env.load_tasks();
     assert!(tasks[2].blocking_deps(&tasks).is_empty());
@@ -512,7 +512,7 @@ fn test_recurrence_does_not_inherit_deps() {
 
     let due_str = format!("{}", days_from_now(1).format("%Y-%m-%d"));
 
-    task_add::execute(
+    task::add::execute(
         env.storage(),
         AddArgs {
             text: "Recurring task".to_string(),
@@ -527,8 +527,8 @@ fn test_recurrence_does_not_inherit_deps() {
     .unwrap();
 
     // Complete blocker first so task 2 can be completed
-    task_done::execute(env.storage(), 1).unwrap();
-    task_done::execute(env.storage(), 2).unwrap();
+    task::done::execute(env.storage(), 1).unwrap();
+    task::done::execute(env.storage(), 2).unwrap();
 
     // The newly created recurrence (task 3) should have no deps
     let tasks = env.load_tasks();

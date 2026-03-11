@@ -11,13 +11,13 @@ mod helpers;
 
 use helpers::TestEnv;
 use rustodo::cli::AddArgs;
-use rustodo::commands::{task_add, task_remove};
+use rustodo::commands::task;
 use rustodo::models::Priority;
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 fn add_simple(env: &TestEnv, text: &str) -> usize {
-    task_add::execute(
+    task::add::execute(
         env.storage(),
         AddArgs {
             text: text.to_string(),
@@ -40,7 +40,7 @@ fn test_remove_single_task() {
     let env = TestEnv::new();
     add_simple(&env, "Task to remove");
 
-    let result = task_remove::execute(env.storage(), 1, true);
+    let result = task::remove::execute(env.storage(), 1, true);
     assert!(result.is_ok());
     assert_eq!(env.task_count(), 0);
 }
@@ -52,7 +52,7 @@ fn test_remove_reduces_task_count() {
     add_simple(&env, "Task B");
     add_simple(&env, "Task C");
 
-    task_remove::execute(env.storage(), 2, true).unwrap();
+    task::remove::execute(env.storage(), 2, true).unwrap();
 
     assert_eq!(env.task_count(), 2);
 }
@@ -64,7 +64,7 @@ fn test_remove_first_task() {
     add_simple(&env, "Second");
     add_simple(&env, "Third");
 
-    task_remove::execute(env.storage(), 1, true).unwrap();
+    task::remove::execute(env.storage(), 1, true).unwrap();
 
     let tasks = env.load_tasks();
     assert_eq!(tasks.len(), 2);
@@ -79,7 +79,7 @@ fn test_remove_middle_task() {
     add_simple(&env, "Middle");
     add_simple(&env, "Last");
 
-    task_remove::execute(env.storage(), 2, true).unwrap();
+    task::remove::execute(env.storage(), 2, true).unwrap();
 
     let tasks = env.load_tasks();
     assert_eq!(tasks.len(), 2);
@@ -93,7 +93,7 @@ fn test_remove_last_task() {
     add_simple(&env, "First");
     add_simple(&env, "Last");
 
-    task_remove::execute(env.storage(), 2, true).unwrap();
+    task::remove::execute(env.storage(), 2, true).unwrap();
 
     let tasks = env.load_tasks();
     assert_eq!(tasks.len(), 1);
@@ -107,7 +107,7 @@ fn test_remove_correct_task_by_text() {
     add_simple(&env, "Remove me");
     add_simple(&env, "Keep me too");
 
-    task_remove::execute(env.storage(), 2, true).unwrap();
+    task::remove::execute(env.storage(), 2, true).unwrap();
 
     let tasks = env.load_tasks();
     assert_eq!(tasks.len(), 2);
@@ -122,7 +122,7 @@ fn test_remove_with_yes_flag_skips_confirmation() {
     add_simple(&env, "Task");
 
     // yes=true should not prompt and just remove
-    let result = task_remove::execute(env.storage(), 1, true);
+    let result = task::remove::execute(env.storage(), 1, true);
     assert!(result.is_ok());
     assert_eq!(env.task_count(), 0);
 }
@@ -134,7 +134,7 @@ fn test_remove_id_zero_fails() {
     let env = TestEnv::new();
     add_simple(&env, "Task");
 
-    let result = task_remove::execute(env.storage(), 0, true);
+    let result = task::remove::execute(env.storage(), 0, true);
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("invalid"));
 }
@@ -144,7 +144,7 @@ fn test_remove_id_out_of_range_fails() {
     let env = TestEnv::new();
     add_simple(&env, "Task");
 
-    let result = task_remove::execute(env.storage(), 99, true);
+    let result = task::remove::execute(env.storage(), 99, true);
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("invalid"));
 }
@@ -153,7 +153,7 @@ fn test_remove_id_out_of_range_fails() {
 fn test_remove_from_empty_storage_fails() {
     let env = TestEnv::new();
 
-    let result = task_remove::execute(env.storage(), 1, true);
+    let result = task::remove::execute(env.storage(), 1, true);
     assert!(result.is_err());
 }
 
@@ -167,9 +167,9 @@ fn test_remove_all_tasks_one_by_one() {
     add_simple(&env, "C");
 
     // Always remove ID 1 since list shifts after each removal
-    task_remove::execute(env.storage(), 1, true).unwrap();
-    task_remove::execute(env.storage(), 1, true).unwrap();
-    task_remove::execute(env.storage(), 1, true).unwrap();
+    task::remove::execute(env.storage(), 1, true).unwrap();
+    task::remove::execute(env.storage(), 1, true).unwrap();
+    task::remove::execute(env.storage(), 1, true).unwrap();
 
     assert_eq!(env.task_count(), 0);
 }
@@ -178,7 +178,7 @@ fn test_remove_all_tasks_one_by_one() {
 fn test_remove_preserves_task_metadata() {
     let env = TestEnv::new();
     add_simple(&env, "Keep this");
-    task_add::execute(
+    task::add::execute(
         env.storage(),
         AddArgs {
             text: "Remove this".to_string(),
@@ -192,7 +192,7 @@ fn test_remove_preserves_task_metadata() {
     )
     .unwrap();
 
-    task_remove::execute(env.storage(), 2, true).unwrap();
+    task::remove::execute(env.storage(), 2, true).unwrap();
 
     let tasks = env.load_tasks();
     assert_eq!(tasks.len(), 1);

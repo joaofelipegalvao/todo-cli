@@ -13,14 +13,14 @@
 mod helpers;
 use helpers::TestEnv;
 use rustodo::cli::AddArgs;
-use rustodo::commands::{search, task_add, task_done};
+use rustodo::commands::{search, task};
 use rustodo::models::{Priority, StatusFilter};
 use rustodo::storage::Storage;
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 fn add_task(env: &TestEnv, text: &str, tags: Vec<&str>, project: Option<&str>) -> usize {
-    task_add::execute(
+    task::add::execute(
         env.storage(),
         AddArgs {
             text: text.to_string(),
@@ -126,7 +126,7 @@ fn test_search_status_all_returns_both() {
     add_simple(&env, "Buy milk");
     add_simple(&env, "Buy bread");
 
-    task_done::execute(env.storage(), 1).unwrap();
+    task::done::execute(env.storage(), 1).unwrap();
 
     let result = search::execute(
         env.storage(),
@@ -152,7 +152,7 @@ fn test_search_status_pending_excludes_done() {
     add_simple(&env, "Buy milk");
     add_simple(&env, "Buy bread");
 
-    task_done::execute(env.storage(), 1).unwrap();
+    task::done::execute(env.storage(), 1).unwrap();
 
     let result = search::execute(
         env.storage(),
@@ -179,7 +179,7 @@ fn test_search_status_done_excludes_pending() {
     add_simple(&env, "Buy milk");
     add_simple(&env, "Buy bread");
 
-    task_done::execute(env.storage(), 1).unwrap();
+    task::done::execute(env.storage(), 1).unwrap();
 
     let result = search::execute(
         env.storage(),
@@ -204,7 +204,7 @@ fn test_search_status_pending_no_results_fails() {
     let env = TestEnv::new();
     add_simple(&env, "Buy milk");
 
-    task_done::execute(env.storage(), 1).unwrap();
+    task::done::execute(env.storage(), 1).unwrap();
 
     // All "buy" tasks are done — pending search should fail
     let result = search::execute(
@@ -330,7 +330,7 @@ fn test_search_tag_and_project_and_status() {
     add_task(&env, "Fix minor bug", vec!["work"], Some("Backend"));
     add_task(&env, "Fix UI bug", vec!["urgent"], Some("Frontend"));
 
-    task_done::execute(env.storage(), 1).unwrap();
+    task::done::execute(env.storage(), 1).unwrap();
 
     // Pending + urgent + Backend
     let result = search::execute(
