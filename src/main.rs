@@ -87,8 +87,6 @@ fn run(cli: Cli, storage: &impl Storage) -> Result<()> {
 
         Commands::Tags { tag } => commands::tags::execute(storage, tag),
 
-        Commands::Projects => commands::project::list::execute(storage),
-
         Commands::Project(sub) => match sub {
             ProjectCommands::Add(args) => commands::project::add::execute(storage, args),
             ProjectCommands::List => commands::project::list::execute(storage),
@@ -106,6 +104,7 @@ fn run(cli: Cli, storage: &impl Storage) -> Result<()> {
             NoteCommands::Add(args) => commands::note::add::execute(storage, args),
             NoteCommands::List(args) => commands::note::list::execute(storage, args),
             NoteCommands::Show { id } => commands::note::show::execute(storage, id),
+            NoteCommands::Preview { id } => commands::note::preview::execute(storage, id),
             NoteCommands::Edit(args) => commands::note::edit::execute(storage, args),
             NoteCommands::Remove { id, yes } => commands::note::remove::execute(storage, id, yes),
             NoteCommands::Clear { yes } => commands::note::clear::execute(storage, yes),

@@ -7,6 +7,18 @@ use crate::models::count_by_project;
 use crate::render::formatting::truncate;
 use crate::storage::Storage;
 
+/// Returns a single-line preview of a note — title if set, otherwise first non-empty line.
+fn note_preview(note: &crate::models::Note) -> String {
+    if let Some(ref title) = note.title {
+        return title.clone();
+    }
+    note.body
+        .lines()
+        .find(|l| !l.trim().is_empty())
+        .map(|l| l.trim_start_matches('#').trim().to_string())
+        .unwrap_or_default()
+}
+
 pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     let (tasks, projects, notes) = storage.load_all()?;
 
@@ -19,7 +31,6 @@ pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
 
     let (total, done) = count_by_project(&tasks, project.uuid);
 
-    // All visible tasks — needed for is_blocked cross-reference
     let all_visible: Vec<_> = tasks.iter().filter(|t| !t.is_deleted()).cloned().collect();
 
     let visible_tasks: Vec<_> = all_visible
@@ -87,7 +98,6 @@ pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     // ── Tasks ─────────────────────────────────────────────────────────────────
     println!();
 
-    // Build summary line
     let mut summary_parts = Vec::new();
     if pending > 0 {
         summary_parts.push(format!("{} pending", pending.to_string().yellow()));
@@ -105,7 +115,6 @@ pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     println!("  {}  {}", "Tasks".dimmed(), summary_parts.join("  "));
 
     if !visible_tasks.is_empty() {
-        // all_visible_refs for position lookup
         let all_vis_refs: Vec<_> = tasks.iter().filter(|t| !t.is_deleted()).collect();
 
         for task in &visible_tasks {
@@ -161,10 +170,7 @@ pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
             .dimmed()
         );
         for (note_id, note) in &project_notes {
-            let preview = note.title.as_deref().unwrap_or_else(|| {
-                let b = note.body.as_str();
-                if b.len() > 50 { &b[..50] } else { b }
-            });
+            let preview = note_preview(note);
             println!(
                 "    {}  {}",
                 format!("#{}", note_id).dimmed(),

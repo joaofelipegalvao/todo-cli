@@ -5,6 +5,18 @@ use colored::Colorize;
 
 use crate::storage::Storage;
 
+/// Returns a single-line preview of a note — title if set, otherwise first non-empty line.
+fn note_preview(note: &crate::models::Note) -> String {
+    if let Some(ref title) = note.title {
+        return title.clone();
+    }
+    note.body
+        .lines()
+        .find(|l| !l.trim().is_empty())
+        .map(|l| l.trim_start_matches('#').trim().to_string())
+        .unwrap_or_default()
+}
+
 pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     let (_, _, notes, resources) = storage.load_all_with_resources()?;
 
@@ -26,7 +38,7 @@ pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     );
     println!("  {}", "─".repeat(50).dimmed());
 
-    // ── Metadata (Type + Tags first, then URL) ────────────────────────────────
+    // ── Metadata ──────────────────────────────────────────────────────────────
     if let Some(rt) = resource.resource_type {
         println!("  {}  {}", "Type".dimmed(), rt.label().yellow());
     }
@@ -75,10 +87,7 @@ pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
             referencing.len().to_string().dimmed()
         );
         for (note_id, note) in &referencing {
-            let preview = note.title.as_deref().unwrap_or_else(|| {
-                let b = note.body.as_str();
-                if b.len() > 50 { &b[..50] } else { b }
-            });
+            let preview = note_preview(note);
             println!(
                 "    {}  {}",
                 format!("#{}", note_id).dimmed(),

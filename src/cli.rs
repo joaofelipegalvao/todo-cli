@@ -12,24 +12,23 @@ use crate::models::{
 #[command(author = "github.com/joaofelipegalvao")]
 #[command(version)]
 #[command(about = "A modern, powerful task manager built with Rust", long_about = None)]
-#[command(after_help = "EXAMPLES:\n    \
-    # Launch interactive TUI (default)\n    \
-    todo\n\n    \
-    # Add a task to a project with a natural language date\n    \
-    todo add \"Fix login bug\" --project \"Backend\" --priority high --due \"next friday\"\n\n    \
-    # Add a project with tech stack\n    \
-    todo project add \"Backend\" --difficulty hard --tech Rust,PostgreSQL\n\n    \
-    # Mark a project as done\n    \
-    todo project edit 1 --done\n\n    \
-    # Add a note linked to a project\n    \
-    todo note add \"Setup do banco de dados\" --project \"Backend\" --language Rust\n\n    \
-    # Add a resource and link it to a note\n    \
-    todo resource add \"sqlx docs\" --url https://docs.rs/sqlx --type docs --tag rust,db\n    \
-    todo note edit 1 --add-resource 1\n\n    \
-    # Configure sync and push\n    \
-    todo sync init git@github.com:user/tasks.git\n    \
-    todo sync push\n\n\
-For more information, visit: https://github.com/joaofelipegalvao/rustodo\n")]
+#[command(override_usage = "todo [COMMAND]")]
+#[command(after_help = "\
+COMMANDS:
+  Task Management:
+    add (a), list (ls), done, undone, edit (e), remove (rm), clear, recur, clear-recur
+
+  Viewing & Planning:
+    next (n), calendar (cal), stats, search (find), context (ctx), deps, tags
+
+  Organization:
+    project, note, resource
+
+  System:
+    sync, info, purge, holidays
+
+Run 'todo <COMMAND> --help' for more information on a command.
+")]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Option<Commands>,
@@ -37,12 +36,13 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    // ── Task Management ───────────────────────────────────────────────────────
     /// Add a new task to your todo list
-    #[command(visible_alias = "a")]
+    #[command(visible_alias = "a", hide = true)]
     Add(AddArgs),
 
     /// List and filter tasks
-    #[command(visible_alias = "ls")]
+    #[command(visible_alias = "ls", hide = true)]
     List {
         #[arg(long, value_enum, default_value_t = StatusFilter::All)]
         status: StatusFilter,
@@ -61,21 +61,25 @@ pub enum Commands {
     },
 
     /// Mark a task as completed
-    #[command(visible_alias = "complete")]
+    #[command(visible_alias = "complete", hide = true)]
     Done {
         #[arg(value_name = "ID")]
         id: usize,
     },
 
     /// Mark a completed task as pending
-    #[command(visible_alias = "undo")]
+    #[command(visible_alias = "undo", hide = true)]
     Undone {
         #[arg(value_name = "ID")]
         id: usize,
     },
 
+    /// Edit an existing task
+    #[command(visible_alias = "e", hide = true)]
+    Edit(EditArgs),
+
     /// Remove a task permanently
-    #[command(visible_aliases = ["rm", "delete"])]
+    #[command(visible_aliases = ["rm", "delete"], hide = true)]
     Remove {
         #[arg(value_name = "ID")]
         id: usize,
@@ -83,19 +87,55 @@ pub enum Commands {
         yes: bool,
     },
 
-    /// Edit an existing task
-    #[command(visible_alias = "e")]
-    Edit(EditArgs),
-
     /// Clear all tasks
-    #[command(visible_alias = "reset")]
+    #[command(visible_alias = "reset", hide = true)]
     Clear {
         #[arg(long, short = 'y')]
         yes: bool,
     },
 
+    /// Set or change recurrence pattern for a task
+    #[command(hide = true)]
+    Recur {
+        #[arg(value_name = "ID")]
+        id: usize,
+        #[arg(value_enum)]
+        pattern: Recurrence,
+    },
+
+    /// Remove recurrence pattern from a task
+    #[command(visible_alias = "norecur", hide = true)]
+    ClearRecur {
+        #[arg(value_name = "ID")]
+        id: usize,
+    },
+
+    // ── Viewing & Planning ────────────────────────────────────────────────────
+    /// Show the most urgent pending tasks ready to work on
+    #[command(visible_alias = "n", hide = true)]
+    Next {
+        /// How many tasks to show (default: 5).
+        #[arg(long, short = 'n', default_value_t = 5)]
+        limit: usize,
+    },
+
+    /// Show a monthly calendar with due dates for tasks and projects
+    #[command(visible_alias = "cal", hide = true)]
+    Calendar {
+        /// Month (1-12). Defaults to current month.
+        #[arg(value_name = "MONTH")]
+        month: Option<u32>,
+        /// Year (e.g. 2026). Defaults to current year.
+        #[arg(value_name = "YEAR")]
+        year: Option<i32>,
+    },
+
+    /// Show productivity statistics and activity chart
+    #[command(hide = true)]
+    Stats,
+
     /// Search for tasks by text content
-    #[command(visible_alias = "find")]
+    #[command(visible_alias = "find", hide = true)]
     Search {
         #[arg(value_name = "QUERY")]
         query: String,
@@ -107,74 +147,52 @@ pub enum Commands {
         status: StatusFilter,
     },
 
-    /// Show productivity statistics and activity chart.
-    Stats,
-
-    /// Show a monthly calendar with due dates for tasks and projects.
-    #[command(visible_alias = "cal")]
-    Calendar {
-        /// Month (1-12). Defaults to current month.
-        #[arg(value_name = "MONTH")]
-        month: Option<u32>,
-        /// Year (e.g. 2026). Defaults to current year.
-        #[arg(value_name = "YEAR")]
-        year: Option<i32>,
+    /// Show everything linked to a task: project, dependencies, notes, resources
+    #[command(visible_alias = "ctx", hide = true)]
+    Context {
+        #[arg(value_name = "ID")]
+        id: usize,
     },
 
-    /// Show the most urgent pending tasks ready to work on.
-    #[command(visible_alias = "n")]
-    Next {
-        /// How many tasks to show (default: 5).
-        #[arg(long, short = 'n', default_value_t = 5)]
-        limit: usize,
+    /// Show dependency graph for a task
+    #[command(hide = true)]
+    Deps {
+        #[arg(value_name = "ID")]
+        id: usize,
     },
 
-    /// List all tags with counts, or show hub view for a specific tag.
+    /// List all tags with counts, or show hub view for a specific tag
+    #[command(hide = true)]
     Tags {
         /// Optional tag name to show hub view (all tasks, notes, resources with this tag).
         #[arg(value_name = "TAG")]
         tag: Option<String>,
     },
 
-    /// List all projects (shorthand for `todo project list`).
-    Projects,
-
-    /// Manage projects.
-    #[command(subcommand)]
+    // ── Organization ─────────────────────────────────────────────────────────
+    /// Manage projects
+    #[command(subcommand, hide = true)]
     Project(ProjectCommands),
 
-    /// Show everything linked to a task: project, dependencies, notes, resources.
-    #[command(visible_alias = "ctx")]
-    Context {
-        #[arg(value_name = "ID")]
-        id: usize,
-    },
+    /// Manage notes (documentation linked to projects, tasks, or resources)
+    #[command(subcommand, hide = true)]
+    Note(NoteCommands),
 
-    /// Show dependency graph for a task.
-    Deps {
-        #[arg(value_name = "ID")]
-        id: usize,
-    },
+    /// Manage resources (external references: links, docs, assets)
+    #[command(subcommand, hide = true)]
+    Resource(ResourceCommands),
 
-    /// Show information about data file location.
+    // ── System ────────────────────────────────────────────────────────────────
+    /// Sync tasks with a Git repository
+    #[command(subcommand, hide = true)]
+    Sync(SyncCommands),
+
+    /// Show information about data file location
+    #[command(hide = true)]
     Info,
 
-    /// Set or change recurrence pattern for a task.
-    Recur {
-        #[arg(value_name = "ID")]
-        id: usize,
-        #[arg(value_enum)]
-        pattern: Recurrence,
-    },
-
-    /// Remove recurrence pattern from a task.
-    #[command(visible_alias = "norecur")]
-    ClearRecur {
-        #[arg(value_name = "ID")]
-        id: usize,
-    },
-
-    /// Permanently remove soft-deleted tombstones.
+    /// Permanently remove soft-deleted tombstones
+    #[command(hide = true)]
     Purge {
         #[arg(long, default_value_t = 30)]
         days: u32,
@@ -184,20 +202,8 @@ pub enum Commands {
         yes: bool,
     },
 
-    /// Manage notes (documentation linked to projects, tasks, or resources).
-    #[command(subcommand)]
-    Note(NoteCommands),
-
-    /// Manage resources (external references: links, docs, assets).
-    #[command(subcommand)]
-    Resource(ResourceCommands),
-
-    /// Sync tasks with a Git repository.
-    #[command(subcommand)]
-    Sync(SyncCommands),
-
-    /// Manage holiday data from holidata.net.
-    #[command(subcommand)]
+    /// Manage holiday data from holidata.net
+    #[command(subcommand, hide = true)]
     Holidays(HolidaysCommands),
 }
 
@@ -295,6 +301,11 @@ pub enum NoteCommands {
         #[arg(value_name = "ID")]
         id: usize,
     },
+    /// Preview note body with markdown rendering (requires bat).
+    Preview {
+        #[arg(value_name = "ID")]
+        id: usize,
+    },
     /// Edit an existing note.
     Edit(NoteEditArgs),
     /// Remove a note (soft delete).
@@ -315,8 +326,15 @@ pub enum NoteCommands {
 
 #[derive(Args)]
 pub struct NoteAddArgs {
-    #[arg(value_name = "BODY")]
-    pub body: String,
+    /// Note body (short text). Mutually exclusive with --editor and --file.
+    #[arg(value_name = "BODY", conflicts_with_all = ["editor", "file"])]
+    pub body: Option<String>,
+    /// Open $EDITOR to write the note body. Mutually exclusive with <BODY> and --file.
+    #[arg(long, conflicts_with_all = ["file"])]
+    pub editor: bool,
+    /// Read note body from a markdown file. Mutually exclusive with <BODY> and --editor.
+    #[arg(long, value_name = "PATH", conflicts_with_all = ["editor"])]
+    pub file: Option<std::path::PathBuf>,
     #[arg(long)]
     pub title: Option<String>,
     #[arg(long, short = 't', value_delimiter = ',')]
@@ -347,8 +365,12 @@ pub struct NoteListArgs {
 pub struct NoteEditArgs {
     #[arg(value_name = "ID")]
     pub id: usize,
-    #[arg(long)]
+    /// Edit body inline. Mutually exclusive with --editor.
+    #[arg(long, conflicts_with = "editor")]
     pub body: Option<String>,
+    /// Open $EDITOR to edit the note body. Mutually exclusive with --body.
+    #[arg(long, conflicts_with = "body")]
+    pub editor: bool,
     #[arg(long, conflicts_with = "clear_title")]
     pub title: Option<String>,
     #[arg(long, conflicts_with = "title")]

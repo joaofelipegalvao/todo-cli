@@ -126,8 +126,11 @@ pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
                 .unwrap_or(0);
 
             let preview = note.title.as_deref().unwrap_or_else(|| {
-                let b = note.body.as_str();
-                if b.len() > 50 { &b[..50] } else { b }
+                note.body
+                    .lines()
+                    .find(|l| !l.trim().is_empty())
+                    .map(|l| l.trim_start_matches('#').trim())
+                    .unwrap_or("")
             });
             println!(
                 "    {}  {}",
