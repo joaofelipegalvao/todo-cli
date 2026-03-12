@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.24.0](https://github.com/joaofelipegalvao/rustodo/compare/v2.23.0..v2.24.0) - 2026-03-12
+
+### Features
+
+- Add NoteFormat enum for markdown support - ([37bd07e](https://github.com/joaofelipegalvao/rustodo/commit/37bd07e8251b5d8bada21c36a2d0aa44b452d866))
+- Add note preview command with glow - ([20750e1](https://github.com/joaofelipegalvao/rustodo/commit/20750e190481cd861158570f5bd5d620560d56e4))
+- Enhance note add/edit with --editor flag - ([4038a98](https://github.com/joaofelipegalvao/rustodo/commit/4038a981b3803f6e1a5e6e867fee249feb2069fa))
+- Show markdown hint in note show output - ([f2d2f83](https://github.com/joaofelipegalvao/rustodo/commit/f2d2f830eceea0d4fdbb171f8fdd499fea9ca700))
+
+### Refactoring
+
+- Reorganize CLI help and hide command aliases - ([53fc417](https://github.com/joaofelipegalvao/rustodo/commit/53fc417a512a0e4f64b66905d213334087a39e29))
 ## [2.23.0](https://github.com/joaofelipegalvao/rustodo/compare/v2.22.0..v2.23.0) - 2026-03-11
 
 ### Features
@@ -476,6 +488,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Features
 
 - V1 - basic todo CLI with add/list commands - ([9580ae2](https://github.com/joaofelipegalvao/rustodo/commit/9580ae297837c9a6c5d4b18868d2f3abac1b1b9e))
+[2.24.0]: https://github.com/joaofelipegalvao/rustodo/compare/v2.23.0...v2.24.0
 [2.23.0]: https://github.com/joaofelipegalvao/rustodo/compare/v2.22.0...v2.23.0
 [2.22.0]: https://github.com/joaofelipegalvao/rustodo/compare/v2.21.0...v2.22.0
 [2.21.0]: https://github.com/joaofelipegalvao/rustodo/compare/v2.20.0...v2.21.0
