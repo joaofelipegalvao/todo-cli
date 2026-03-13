@@ -35,11 +35,11 @@ pub fn visible_indices<T>(items: &[T], is_deleted: impl Fn(&T) -> bool) -> Vec<u
 ///
 /// # Errors
 /// Returns `TodoError::InvalidTaskId` if the ID is out of range.
-pub fn resolve_visible<'a, T>(
-    items: &'a [T],
+pub fn resolve_visible<T>(
+    items: &[T],
     id: usize,
     is_deleted: impl Fn(&T) -> bool,
-) -> Result<&'a T, TodoError> {
+) -> Result<&T, TodoError> {
     let indices = visible_indices(items, is_deleted);
     validate_task_id(id, indices.len())?;
     Ok(&items[indices[id - 1]])

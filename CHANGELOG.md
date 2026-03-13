@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.25.0](https://github.com/joaofelipegalvao/rustodo/compare/v2.24.1..v2.25.0) - 2026-03-13
+
+### Features
+
+- Add resolve_visible helper functions - ([735ea6c](https://github.com/joaofelipegalvao/rustodo/commit/735ea6c0d24f667ea0e1cb9f00cf60c585a0a564))
+
+### Refactoring
+
+- Remove sync module completely - ([0f0baa5](https://github.com/joaofelipegalvao/rustodo/commit/0f0baa58a2349f6f119480aa41635a5cf27ff0eb))
+- Use resolve_visible helpers in commands - ([e6a3d42](https://github.com/joaofelipegalvao/rustodo/commit/e6a3d4204a454ef12dc916a6b00b0049072dacb8))
 ## [2.24.1](https://github.com/joaofelipegalvao/rustodo/compare/v2.24.0..v2.24.1) - 2026-03-13
 
 ### Bug Fixes
@@ -499,6 +509,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Features
 
 - V1 - basic todo CLI with add/list commands - ([9580ae2](https://github.com/joaofelipegalvao/rustodo/commit/9580ae297837c9a6c5d4b18868d2f3abac1b1b9e))
+[2.25.0]: https://github.com/joaofelipegalvao/rustodo/compare/v2.24.1...v2.25.0
 [2.24.1]: https://github.com/joaofelipegalvao/rustodo/compare/v2.24.0...v2.24.1
 [2.24.0]: https://github.com/joaofelipegalvao/rustodo/compare/v2.23.0...v2.24.0
 [2.23.0]: https://github.com/joaofelipegalvao/rustodo/compare/v2.22.0...v2.23.0
