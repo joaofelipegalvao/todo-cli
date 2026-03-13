@@ -25,7 +25,7 @@ COMMANDS:
     project, note, resource
 
   System:
-    sync, info, purge, holidays
+    info, purge, holidays
 
 Run 'todo <COMMAND> --help' for more information on a command.
 ")]
@@ -183,10 +183,6 @@ pub enum Commands {
     Resource(ResourceCommands),
 
     // ── System ────────────────────────────────────────────────────────────────
-    /// Sync tasks with a Git repository
-    #[command(subcommand, hide = true)]
-    Sync(SyncCommands),
-
     /// Show information about data file location
     #[command(hide = true)]
     Info,

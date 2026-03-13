@@ -9,10 +9,9 @@ use clap::Parser;
 use colored::Colorize;
 
 use rustodo::cli::{
-    Cli, Commands, HolidaysCommands, NoteCommands, ProjectCommands, ResourceCommands, SyncCommands,
+    Cli, Commands, HolidaysCommands, NoteCommands, ProjectCommands, ResourceCommands,
 };
 use rustodo::commands;
-use rustodo::commands::sync::SyncCommand;
 use rustodo::storage::{SqliteStorage, Storage, backup, get_db_path};
 
 fn main() {
@@ -144,16 +143,6 @@ fn run(cli: Cli, storage: &impl Storage) -> Result<()> {
 
         Commands::Purge { days, dry_run, yes } => {
             commands::purge::execute(storage, days, dry_run, yes)
-        }
-
-        Commands::Sync(sub) => {
-            let cmd = match sub {
-                SyncCommands::Init { remote } => SyncCommand::Init { remote },
-                SyncCommands::Push => SyncCommand::Push,
-                SyncCommands::Pull => SyncCommand::Pull,
-                SyncCommands::Status => SyncCommand::Status,
-            };
-            commands::sync::execute(storage, cmd)
         }
 
         Commands::Holidays(sub) => match sub {

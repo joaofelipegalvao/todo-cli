@@ -41,7 +41,6 @@
 //! | [`search`]         | `todo search <QUERY>`           |
 //! | [`stats`]          | `todo stats`                    |
 //! | [`stats_history`]  | `todo stats history`            |
-//! | [`sync`]           | `todo sync`                     |
 //! | [`tags`]           | `todo tags`                     |
 
 pub mod note;
@@ -57,5 +56,4 @@ pub mod purge;
 pub mod search;
 pub mod stats;
 pub mod stats_history;
-pub mod sync;
 pub mod tags;
