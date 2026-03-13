@@ -6,6 +6,7 @@ use colored::Colorize;
 use crate::models::count_by_project;
 use crate::render::formatting::truncate;
 use crate::storage::Storage;
+use crate::utils::validation::resolve_visible;
 
 /// Returns a single-line preview of a note — title if set, otherwise first non-empty line.
 fn note_preview(note: &crate::models::Note) -> String {
@@ -25,9 +26,8 @@ pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     let mut visible_projects: Vec<_> = projects.iter().filter(|p| !p.is_deleted()).collect();
     visible_projects.sort_by(|a, b| a.name.cmp(&b.name));
 
-    let project = visible_projects
-        .get(id.saturating_sub(1))
-        .ok_or_else(|| anyhow::anyhow!("Project #{} not found", id))?;
+    let project = resolve_visible(&visible_projects, id, |p| p.is_deleted())
+        .map_err(|_| anyhow::anyhow!("Project #{} not found", id))?;
 
     let (total, done) = count_by_project(&tasks, project.uuid);
 

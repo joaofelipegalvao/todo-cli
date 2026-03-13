@@ -7,15 +7,14 @@ use anyhow::Result;
 use colored::Colorize;
 
 use crate::storage::Storage;
-use crate::utils::validation::{validate_task_id, visible_indices};
+use crate::utils::validation::resolve_visible_index;
 
 pub fn execute(storage: &impl Storage, id: usize, yes: bool) -> Result<()> {
     let (_, _, mut notes, mut resources) = storage.load_all_with_resources()?;
 
-    let vis = visible_indices(&resources, |r| r.is_deleted());
-    validate_task_id(id, vis.len())?;
+    let real_index = resolve_visible_index(&resources, id, |r| r.is_deleted())
+        .map_err(|_| anyhow::anyhow!("Resource #{} not found", id))?;
 
-    let real_index = vis[id - 1];
     let resource_uuid = resources[real_index].uuid;
     let title = resources[real_index].title.clone();
 

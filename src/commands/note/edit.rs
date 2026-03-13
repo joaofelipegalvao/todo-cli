@@ -9,21 +9,13 @@ use colored::Colorize;
 use crate::cli::NoteEditArgs;
 use crate::models::{NoteFormat, Project};
 use crate::storage::Storage;
+use crate::utils::validation::{resolve_visible, resolve_visible_index};
 
 pub fn execute(storage: &impl Storage, args: NoteEditArgs) -> Result<()> {
     let (tasks, projects, mut notes, resources) = storage.load_all_with_resources()?;
 
-    let visible: Vec<usize> = notes
-        .iter()
-        .enumerate()
-        .filter(|(_, n)| !n.is_deleted())
-        .map(|(i, _)| i)
-        .collect();
-
-    let real_index = visible
-        .get(args.id.saturating_sub(1))
-        .copied()
-        .ok_or_else(|| anyhow::anyhow!("Note #{} not found", args.id))?;
+    let real_index = resolve_visible_index(&notes, args.id, |n| n.is_deleted())
+        .map_err(|_| anyhow::anyhow!("Note #{} not found", args.id))?;
 
     let note = &mut notes[real_index];
     let mut changes = Vec::new();
@@ -134,9 +126,8 @@ pub fn execute(storage: &impl Storage, args: NoteEditArgs) -> Result<()> {
             changes.push("task → cleared".dimmed().to_string());
         }
     } else if let Some(task_num) = args.task {
-        let task = tasks
-            .get(task_num.saturating_sub(1))
-            .ok_or_else(|| anyhow::anyhow!("Task #{} not found", task_num))?;
+        let task = resolve_visible(&tasks, task_num, |t| t.is_deleted())
+            .map_err(|_| anyhow::anyhow!("Task #{} not found", task_num))?;
         if note.task_id != Some(task.uuid) {
             note.task_id = Some(task.uuid);
             changes.push(format!("task → #{} {}", task_num, task.text.cyan()));
@@ -150,11 +141,11 @@ pub fn execute(storage: &impl Storage, args: NoteEditArgs) -> Result<()> {
             changes.push("resources → cleared".dimmed().to_string());
         }
     } else {
+        let visible_resources: Vec<_> = resources.iter().filter(|r| !r.is_deleted()).collect();
+
         if !args.remove_resource.is_empty() {
             let mut removed = Vec::new();
             for res_num in &args.remove_resource {
-                let visible_resources: Vec<_> =
-                    resources.iter().filter(|r| !r.is_deleted()).collect();
                 let resource = visible_resources
                     .get(res_num.saturating_sub(1))
                     .ok_or_else(|| anyhow::anyhow!("Resource #{} not found", res_num))?;
@@ -173,8 +164,6 @@ pub fn execute(storage: &impl Storage, args: NoteEditArgs) -> Result<()> {
         if !args.add_resource.is_empty() {
             let mut added = Vec::new();
             for res_num in &args.add_resource {
-                let visible_resources: Vec<_> =
-                    resources.iter().filter(|r| !r.is_deleted()).collect();
                 let resource = visible_resources
                     .get(res_num.saturating_sub(1))
                     .ok_or_else(|| anyhow::anyhow!("Resource #{} not found", res_num))?;

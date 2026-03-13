@@ -7,7 +7,7 @@ use colored::Colorize;
 
 use crate::error::TodoError;
 use crate::storage::Storage;
-use crate::utils::validation::{validate_task_id, visible_indices};
+use crate::utils::validation::resolve_visible_index;
 
 pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     execute_inner(storage, id, false)?;
@@ -21,10 +21,9 @@ pub fn execute_silent(storage: &impl Storage, id: usize) -> Result<String> {
 
 fn execute_inner(storage: &impl Storage, id: usize, silent: bool) -> Result<String> {
     let mut tasks = storage.load()?;
-    let vis = visible_indices(&tasks, |t| t.is_deleted());
-    validate_task_id(id, vis.len())?;
 
-    let index = vis[id - 1];
+    let index = resolve_visible_index(&tasks, id, |t| t.is_deleted())
+        .map_err(|_| anyhow::anyhow!("Task #{} not found", id))?;
 
     if !tasks[index].completed {
         return Err(TodoError::TaskAlreadyInStatus {

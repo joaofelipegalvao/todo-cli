@@ -8,21 +8,13 @@ use colored::Colorize;
 
 use crate::cli::ResourceEditArgs;
 use crate::storage::Storage;
+use crate::utils::validation::resolve_visible_index;
 
 pub fn execute(storage: &impl Storage, args: ResourceEditArgs) -> Result<()> {
     let mut resources = storage.load_resources()?;
 
-    let visible: Vec<usize> = resources
-        .iter()
-        .enumerate()
-        .filter(|(_, r)| !r.is_deleted())
-        .map(|(i, _)| i)
-        .collect();
-
-    let real_index = visible
-        .get(args.id.saturating_sub(1))
-        .copied()
-        .ok_or_else(|| anyhow::anyhow!("Resource #{} not found", args.id))?;
+    let real_index = resolve_visible_index(&resources, args.id, |r| r.is_deleted())
+        .map_err(|_| anyhow::anyhow!("Resource #{} not found", args.id))?;
 
     let resource = &mut resources[real_index];
     let mut changes = Vec::new();

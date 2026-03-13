@@ -8,16 +8,16 @@ use colored::Colorize;
 
 use crate::render::formatting::truncate;
 use crate::storage::Storage;
-use crate::utils::validation::{validate_task_id, visible_indices};
+use crate::utils::validation::{resolve_visible_index, visible_indices};
 
 pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     let (tasks, projects, notes, resources) = storage.load_all_with_resources()?;
 
-    let vis = visible_indices(&tasks, |t| t.is_deleted());
-    validate_task_id(id, vis.len())?;
+    let real_index = resolve_visible_index(&tasks, id, |t| t.is_deleted())
+        .map_err(|_| anyhow::anyhow!("Task #{} not found", id))?;
 
-    let real_index = vis[id - 1];
     let task = &tasks[real_index];
+    let vis = visible_indices(&tasks, |t| t.is_deleted());
 
     let all_visible: Vec<_> = tasks.iter().filter(|t| !t.is_deleted()).cloned().collect();
     let is_blocked = !task.completed && task.is_blocked(&all_visible);

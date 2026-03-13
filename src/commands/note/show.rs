@@ -5,15 +5,13 @@ use colored::Colorize;
 
 use crate::models::NoteFormat;
 use crate::storage::Storage;
+use crate::utils::validation::resolve_visible;
 
 pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     let (tasks, projects, notes, resources) = storage.load_all_with_resources()?;
 
-    let visible_notes: Vec<_> = notes.iter().filter(|n| !n.is_deleted()).collect();
-
-    let note = visible_notes
-        .get(id.saturating_sub(1))
-        .ok_or_else(|| anyhow::anyhow!("Note #{} not found", id))?;
+    let note = resolve_visible(&notes, id, |n| n.is_deleted())
+        .map_err(|_| anyhow::anyhow!("Note #{} not found", id))?;
 
     let visible_resources: Vec<_> = resources.iter().filter(|r| !r.is_deleted()).collect();
 

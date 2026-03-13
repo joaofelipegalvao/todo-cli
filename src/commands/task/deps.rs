@@ -9,15 +9,16 @@ use anyhow::Result;
 use colored::Colorize;
 
 use crate::storage::Storage;
-use crate::utils::validation::{validate_task_id, visible_indices};
+use crate::utils::validation::{resolve_visible_index, visible_indices};
 
 pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     let tasks = storage.load()?;
-    let vis = visible_indices(&tasks, |t| t.is_deleted());
-    validate_task_id(id, vis.len())?;
 
-    let real_index = vis[id - 1];
+    let real_index = resolve_visible_index(&tasks, id, |t| t.is_deleted())
+        .map_err(|_| anyhow::anyhow!("Task #{} not found", id))?;
+
     let task = &tasks[real_index];
+    let vis = visible_indices(&tasks, |t| t.is_deleted());
 
     println!(
         "\n{} #{}: {}\n",

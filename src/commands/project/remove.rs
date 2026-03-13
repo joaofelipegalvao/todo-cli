@@ -7,7 +7,7 @@ use anyhow::Result;
 use colored::Colorize;
 
 use crate::storage::Storage;
-use crate::utils::validation::{validate_task_id, visible_indices};
+use crate::utils::validation::resolve_visible_index;
 
 pub fn execute(storage: &impl Storage, id: usize, yes: bool) -> Result<()> {
     execute_inner(storage, id, yes, false)?;
@@ -21,9 +21,9 @@ pub fn execute_silent(storage: &impl Storage, id: usize) -> Result<String> {
 fn execute_inner(storage: &impl Storage, id: usize, yes: bool, silent: bool) -> Result<String> {
     let (mut tasks, mut projects, mut notes) = storage.load_all()?;
 
-    let vis = visible_indices(&projects, |p| p.is_deleted());
-    validate_task_id(id, vis.len())?;
-    let real_index = vis[id - 1];
+    let real_index = resolve_visible_index(&projects, id, |p| p.is_deleted())
+        .map_err(|_| anyhow::anyhow!("Project #{} not found", id))?;
+
     let project_uuid = projects[real_index].uuid;
     let name = projects[real_index].name.clone();
 

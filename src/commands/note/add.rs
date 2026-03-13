@@ -8,6 +8,7 @@ use crate::models::{Note, Project};
 use crate::services::tag_service::collect_all_tag_names;
 use crate::storage::Storage;
 use crate::utils::tag_normalizer::normalize_tags;
+use crate::utils::validation::resolve_visible;
 
 pub fn execute(storage: &impl Storage, args: NoteAddArgs) -> Result<()> {
     let (tasks, projects, mut notes) = storage.load_all()?;
@@ -54,9 +55,8 @@ pub fn execute(storage: &impl Storage, args: NoteAddArgs) -> Result<()> {
 
     // ── Resolve task display-id → UUID ────────────────────────────────────────
     let task_id = if let Some(task_num) = args.task {
-        let task = tasks
-            .get(task_num.saturating_sub(1))
-            .ok_or_else(|| anyhow::anyhow!("Task #{} not found", task_num))?;
+        let task = resolve_visible(&tasks, task_num, |t| t.is_deleted())
+            .map_err(|_| anyhow!("Task #{} not found", task_num))?;
         Some(task.uuid)
     } else {
         None

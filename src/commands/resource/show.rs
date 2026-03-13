@@ -4,6 +4,7 @@ use anyhow::Result;
 use colored::Colorize;
 
 use crate::storage::Storage;
+use crate::utils::validation::resolve_visible;
 
 /// Returns a single-line preview of a note — title if set, otherwise first non-empty line.
 fn note_preview(note: &crate::models::Note) -> String {
@@ -20,11 +21,8 @@ fn note_preview(note: &crate::models::Note) -> String {
 pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     let (_, _, notes, resources) = storage.load_all_with_resources()?;
 
-    let visible_resources: Vec<_> = resources.iter().filter(|r| !r.is_deleted()).collect();
-
-    let resource = visible_resources
-        .get(id.saturating_sub(1))
-        .ok_or_else(|| anyhow::anyhow!("Resource #{} not found", id))?;
+    let resource = resolve_visible(&resources, id, |r| r.is_deleted())
+        .map_err(|_| anyhow::anyhow!("Resource #{} not found", id))?;
 
     let visible_notes: Vec<_> = notes.iter().filter(|n| !n.is_deleted()).collect();
 

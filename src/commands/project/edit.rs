@@ -6,14 +6,13 @@ use colored::Colorize;
 use crate::cli::ProjectEditArgs;
 use crate::storage::Storage;
 use crate::utils::date_parser;
-use crate::utils::validation::{validate_task_id, visible_indices};
+use crate::utils::validation::resolve_visible_index;
 
 pub fn execute(storage: &impl Storage, args: ProjectEditArgs) -> Result<()> {
     let (_, mut projects, _) = storage.load_all()?;
 
-    let vis = visible_indices(&projects, |p| p.is_deleted());
-    validate_task_id(args.id, vis.len())?;
-    let real_index = vis[args.id - 1];
+    let real_index = resolve_visible_index(&projects, args.id, |p| p.is_deleted())
+        .map_err(|_| anyhow::anyhow!("Project #{} not found", args.id))?;
 
     let due = if let Some(ref due_str) = args.due {
         Some(date_parser::parse_date_not_in_past(due_str)?)

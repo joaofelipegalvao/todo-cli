@@ -1,19 +1,18 @@
 //! Handler for `todo note preview <ID>`.
+
 use anyhow::Result;
 use colored::Colorize;
 use std::io::Write;
 use std::process::{Command, Stdio};
 
 use crate::storage::Storage;
+use crate::utils::validation::resolve_visible;
 
 pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     let (_, _, notes, _) = storage.load_all_with_resources()?;
 
-    let visible_notes: Vec<_> = notes.iter().filter(|n| !n.is_deleted()).collect();
-
-    let note = visible_notes
-        .get(id.saturating_sub(1))
-        .ok_or_else(|| anyhow::anyhow!("Note #{} not found", id))?;
+    let note = resolve_visible(&notes, id, |n| n.is_deleted())
+        .map_err(|_| anyhow::anyhow!("Note #{} not found", id))?;
 
     // ── Check note format ─────────────────────────────────────────────────────
     if !note.is_markdown() {
