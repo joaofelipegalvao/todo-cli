@@ -23,7 +23,7 @@ fn execute_inner(storage: &impl Storage, id: usize, yes: bool, silent: bool) -> 
     let (mut tasks, projects, mut notes) = storage.load_all()?;
 
     let real_index = resolve_visible_index(&tasks, id, |t| t.is_deleted())
-        .map_err(|_| anyhow::anyhow!("Task #{} not found", id))?;
+        .map_err(|_| anyhow::anyhow!("invalid task ID: {}", id))?;
 
     let task_uuid = tasks[real_index].uuid;
     let task_text = tasks[real_index].text.clone();

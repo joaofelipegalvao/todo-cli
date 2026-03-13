@@ -27,7 +27,7 @@ fn execute_inner(storage: &impl Storage, id: usize, silent: bool) -> Result<Stri
     let mut tasks = storage.load()?;
 
     let index = resolve_visible_index(&tasks, id, |t| t.is_deleted())
-        .map_err(|_| anyhow::anyhow!("Task #{} not found", id))?;
+        .map_err(|_| anyhow::anyhow!("invalid task ID: {}", id))?;
 
     if tasks[index].completed {
         return Err(TodoError::TaskAlreadyInStatus {

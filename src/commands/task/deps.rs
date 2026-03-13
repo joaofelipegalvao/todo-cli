@@ -15,7 +15,7 @@ pub fn execute(storage: &impl Storage, id: usize) -> Result<()> {
     let tasks = storage.load()?;
 
     let real_index = resolve_visible_index(&tasks, id, |t| t.is_deleted())
-        .map_err(|_| anyhow::anyhow!("Task #{} not found", id))?;
+        .map_err(|_| anyhow::anyhow!("invalid task ID: {}", id))?;
 
     let task = &tasks[real_index];
     let vis = visible_indices(&tasks, |t| t.is_deleted());
