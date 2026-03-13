@@ -2,19 +2,9 @@
 //!
 //! | Type | Description |
 //! |---|---|
-//! | [`JsonStorage`]     | Persists to a JSON file in the OS data directory |
+//! | [`SqliteStorage`]   | Persists to a SQLite database in the OS data directory |
+//! | [`JsonStorage`]     | Legacy JSON storage — kept for migration and testing |
 //! | [`InMemoryStorage`] | Stores in memory — ideal for tests |
-//!
-//! ## File format
-//!
-//! ```json
-//! {
-//!   "tasks":     [...],
-//!   "projects":  [...],
-//!   "notes":     [...],
-//!   "resources": [...]
-//! }
-//! ```
 
 use crate::models::{Note, Project, Resource, Task};
 use anyhow::Result;
@@ -26,7 +16,7 @@ pub trait Storage {
     /// Load all tasks from storage.
     fn load(&self) -> Result<Vec<Task>>;
 
-    /// Persist all tasks, replacing any previously saved state.
+    /// Persist all tasks (upsert by UUID).
     fn save(&self, tasks: &[Task]) -> Result<()>;
 
     // ── projects ──────────────────────────────────────────────────────────────
@@ -34,7 +24,7 @@ pub trait Storage {
     /// Load all projects from storage.
     fn load_projects(&self) -> Result<Vec<Project>>;
 
-    /// Persist all projects, replacing any previously saved state.
+    /// Persist all projects (upsert by UUID).
     fn save_projects(&self, projects: &[Project]) -> Result<()>;
 
     // ── notes ─────────────────────────────────────────────────────────────────
@@ -42,7 +32,7 @@ pub trait Storage {
     /// Load all notes from storage.
     fn load_notes(&self) -> Result<Vec<Note>>;
 
-    /// Persist all notes, replacing any previously saved state.
+    /// Persist all notes (upsert by UUID).
     fn save_notes(&self, notes: &[Note]) -> Result<()>;
 
     // ── resources ─────────────────────────────────────────────────────────────
@@ -50,12 +40,12 @@ pub trait Storage {
     /// Load all resources from storage.
     fn load_resources(&self) -> Result<Vec<Resource>>;
 
-    /// Persist all resources, replacing any previously saved state.
+    /// Persist all resources (upsert by UUID).
     fn save_resources(&self, resources: &[Resource]) -> Result<()>;
 
     // ── combined ──────────────────────────────────────────────────────────────
 
-    /// Load tasks, projects, notes, and resources in a single read.
+    /// Load tasks, projects, and notes in a single call.
     fn load_all(&self) -> Result<(Vec<Task>, Vec<Project>, Vec<Note>)> {
         Ok((self.load()?, self.load_projects()?, self.load_notes()?))
     }
@@ -73,7 +63,7 @@ pub trait Storage {
         ))
     }
 
-    /// Persist tasks, projects and notes in a single write.
+    /// Persist tasks, projects, and notes in a single call.
     fn save_all(&self, tasks: &[Task], projects: &[Project], notes: &[Note]) -> Result<()> {
         self.save(tasks)?;
         self.save_projects(projects)?;
@@ -85,9 +75,9 @@ pub trait Storage {
     fn location(&self) -> String;
 }
 
-pub mod json;
+pub mod backup;
 pub mod memory;
+pub mod sqlite;
 
-pub use json::JsonStorage;
-pub use json::get_data_file_path;
 pub use memory::InMemoryStorage;
+pub use sqlite::{SqliteStorage, get_db_path};
