@@ -29,6 +29,38 @@ pub fn visible_indices<T>(items: &[T], is_deleted: impl Fn(&T) -> bool) -> Vec<u
         .collect()
 }
 
+/// Resolves a 1-based visible ID to an immutable reference to the item.
+///
+/// Use for read-only operations (`show`, `preview`).
+///
+/// # Errors
+/// Returns `TodoError::InvalidTaskId` if the ID is out of range.
+pub fn resolve_visible<'a, T>(
+    items: &'a [T],
+    id: usize,
+    is_deleted: impl Fn(&T) -> bool,
+) -> Result<&'a T, TodoError> {
+    let indices = visible_indices(items, is_deleted);
+    validate_task_id(id, indices.len())?;
+    Ok(&items[indices[id - 1]])
+}
+
+/// Resolves a 1-based visible ID to the real index in the slice.
+///
+/// Use for mutable operations (`edit`, `remove`).
+///
+/// # Errors
+/// Returns `TodoError::InvalidTaskId` if the ID is out of range.
+pub fn resolve_visible_index<T>(
+    items: &[T],
+    id: usize,
+    is_deleted: impl Fn(&T) -> bool,
+) -> Result<usize, TodoError> {
+    let indices = visible_indices(items, is_deleted);
+    validate_task_id(id, indices.len())?;
+    Ok(indices[id - 1])
+}
+
 /// Resolves a user-facing 1-based ID to its UUID, considering only visible
 /// (non-deleted) tasks.
 ///
@@ -277,6 +309,34 @@ mod tests {
         tasks[0].soft_delete();
         tasks[1].soft_delete();
         assert!(visible_indices(&tasks, |t| t.is_deleted()).is_empty());
+    }
+
+    #[test]
+    fn test_resolve_visible_returns_correct_item() {
+        let mut tasks = vec![make_task("A"), make_task("B"), make_task("C")];
+        tasks[1].soft_delete();
+        let item = resolve_visible(&tasks, 2, |t| t.is_deleted()).unwrap();
+        assert_eq!(item.text, "C");
+    }
+
+    #[test]
+    fn test_resolve_visible_out_of_range() {
+        let tasks = vec![make_task("A")];
+        assert!(resolve_visible(&tasks, 2, |t| t.is_deleted()).is_err());
+    }
+
+    #[test]
+    fn test_resolve_visible_index_returns_real_index() {
+        let mut tasks = vec![make_task("A"), make_task("B"), make_task("C")];
+        tasks[1].soft_delete();
+        let idx = resolve_visible_index(&tasks, 2, |t| t.is_deleted()).unwrap();
+        assert_eq!(idx, 2);
+    }
+
+    #[test]
+    fn test_resolve_visible_index_out_of_range() {
+        let tasks = vec![make_task("A")];
+        assert!(resolve_visible_index(&tasks, 2, |t| t.is_deleted()).is_err());
     }
 
     #[test]
