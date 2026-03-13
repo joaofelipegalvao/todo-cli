@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.24.1](https://github.com/joaofelipegalvao/rustodo/compare/v2.24.0..v2.24.1) - 2026-03-13
+
+### Bug Fixes
+
+- Set depends_on after task creation in test - ([7a6ba65](https://github.com/joaofelipegalvao/rustodo/commit/7a6ba65ebce5ed6519f664cc7f4de8652643e60c))
+
+### Refactoring
+
+- Replace JSON storage with SQLite backend - ([293f7ff](https://github.com/joaofelipegalvao/rustodo/commit/293f7ff1cbbe041fdb87468708ba95e087d4074c))
+- Remove Git-based sync - ([334af4f](https://github.com/joaofelipegalvao/rustodo/commit/334af4f7c8387f292b6bd3dbac4cdb99c75e320e))
+- Minor improvements across commands - ([4f4eac1](https://github.com/joaofelipegalvao/rustodo/commit/4f4eac16f0f5b2dd64de683b2621a246353f7da5))
 ## [2.24.0](https://github.com/joaofelipegalvao/rustodo/compare/v2.23.0..v2.24.0) - 2026-03-12
 
 ### Features
@@ -488,6 +499,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Features
 
 - V1 - basic todo CLI with add/list commands - ([9580ae2](https://github.com/joaofelipegalvao/rustodo/commit/9580ae297837c9a6c5d4b18868d2f3abac1b1b9e))
+[2.24.1]: https://github.com/joaofelipegalvao/rustodo/compare/v2.24.0...v2.24.1
 [2.24.0]: https://github.com/joaofelipegalvao/rustodo/compare/v2.23.0...v2.24.0
 [2.23.0]: https://github.com/joaofelipegalvao/rustodo/compare/v2.22.0...v2.23.0
 [2.22.0]: https://github.com/joaofelipegalvao/rustodo/compare/v2.21.0...v2.22.0
