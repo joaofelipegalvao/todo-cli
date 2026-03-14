@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.26.0](https://github.com/joaofelipegalvao/rustodo/compare/v2.25.1..v2.26.0) - 2026-03-14
+
+### Features
+
+- Add backup, restore, export, and import commands - ([7d953ce](https://github.com/joaofelipegalvao/rustodo/commit/7d953ce9697184105c335136a7dadfdd76d201eb))
+
+### Bug Fixes
+
+- Show raw markdown when glow is not installed - ([e8815aa](https://github.com/joaofelipegalvao/rustodo/commit/e8815aac3b5931d9b03cf334b810fe789e78b286))
 ## [2.25.1](https://github.com/joaofelipegalvao/rustodo/compare/v2.25.0..v2.25.1) - 2026-03-13
 
 ### Bug Fixes
@@ -514,6 +523,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Features
 
 - V1 - basic todo CLI with add/list commands - ([9580ae2](https://github.com/joaofelipegalvao/rustodo/commit/9580ae297837c9a6c5d4b18868d2f3abac1b1b9e))
+[2.26.0]: https://github.com/joaofelipegalvao/rustodo/compare/v2.25.1...v2.26.0
 [2.25.1]: https://github.com/joaofelipegalvao/rustodo/compare/v2.25.0...v2.25.1
 [2.25.0]: https://github.com/joaofelipegalvao/rustodo/compare/v2.24.1...v2.25.0
 [2.24.1]: https://github.com/joaofelipegalvao/rustodo/compare/v2.24.0...v2.24.1
